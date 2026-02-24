@@ -44,6 +44,14 @@ final class ConfigLoader
                 'Enabled' => true,
                 'Max' => 17,
             ],
+            'Metrics/CyclomaticComplexity' => [
+                'Enabled' => true,
+                'Max' => 7,
+            ],
+            'Metrics/PerceivedComplexity' => [
+                'Enabled' => true,
+                'Max' => 8,
+            ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],

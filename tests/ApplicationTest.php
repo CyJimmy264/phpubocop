@@ -29,6 +29,10 @@ Lint/EvalUsage:
   Enabled: false
 Metrics/AbcSize:
   Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
 Style/DoubleQuotes:
   Enabled: true
 YAML

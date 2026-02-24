@@ -16,3 +16,11 @@ Lint/EvalUsage:
 Metrics/AbcSize:
   Enabled: true
   Max: 17
+
+Metrics/CyclomaticComplexity:
+  Enabled: true
+  Max: 7
+
+Metrics/PerceivedComplexity:
+  Enabled: true
+  Max: 8

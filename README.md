@@ -56,6 +56,14 @@ Lint/EvalUsage:
 Metrics/AbcSize:
   Enabled: true
   Max: 17
+
+Metrics/CyclomaticComplexity:
+  Enabled: true
+  Max: 7
+
+Metrics/PerceivedComplexity:
+  Enabled: true
+  Max: 8
 ```
 
 ## Included cops (MVP)
@@ -65,6 +73,8 @@ Metrics/AbcSize:
 - `Style/DoubleQuotes`
 - `Lint/EvalUsage`
 - `Metrics/AbcSize`
+- `Metrics/CyclomaticComplexity`
+- `Metrics/PerceivedComplexity`
 
 ## Architecture
 

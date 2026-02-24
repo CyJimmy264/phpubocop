@@ -8,6 +8,8 @@ use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Metrics\AbcSizeCop;
+use PHPuboCop\Cop\Metrics\CyclomaticComplexityCop;
+use PHPuboCop\Cop\Metrics\PerceivedComplexityCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
 
 final class CopRegistry
@@ -20,6 +22,8 @@ final class CopRegistry
             new EvalUsageCop(),
             new DoubleQuotesCop(),
             new AbcSizeCop(),
+            new CyclomaticComplexityCop(),
+            new PerceivedComplexityCop(),
         ];
     }
 }
