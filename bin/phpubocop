@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use PHPuboCop\Application;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Large legacy codebases can require substantial memory for AST parsing.
+$memoryLimit = getenv('PHPUBOCOP_MEMORY_LIMIT') ?: '8G';
+ini_set('memory_limit', $memoryLimit);
+
+$app = new Application();
+exit($app->run($argv));

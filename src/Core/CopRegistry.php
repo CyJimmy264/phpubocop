@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PHPuboCop\Core;
+
+use PHPuboCop\Cop\Layout\LineLengthCop;
+use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
+use PHPuboCop\Cop\Lint\EvalUsageCop;
+use PHPuboCop\Cop\Metrics\AbcSizeCop;
+use PHPuboCop\Cop\Style\DoubleQuotesCop;
+
+final class CopRegistry
+{
+    public static function default(): array
+    {
+        return [
+            new TrailingWhitespaceCop(),
+            new LineLengthCop(),
+            new EvalUsageCop(),
+            new DoubleQuotesCop(),
+            new AbcSizeCop(),
+        ];
+    }
+}

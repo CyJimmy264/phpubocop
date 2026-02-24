@@ -1,0 +1,18 @@
+AllCops:
+  EnabledByDefault: true
+  Exclude:
+    - vendor/**
+
+Layout/LineLength:
+  Enabled: true
+  Max: 120
+
+Style/DoubleQuotes:
+  Enabled: true
+
+Lint/EvalUsage:
+  Enabled: true
+
+Metrics/AbcSize:
+  Enabled: true
+  Max: 17
