@@ -29,6 +29,7 @@ Exit code:
 - `0` if no offenses were found.
 - `1` if at least one offense was found.
 - Files ignored by the project's `.gitignore` are skipped automatically.
+- `--autocorrect` applies only cops explicitly marked as safe for autocorrection.
 
 ## Configuration
 

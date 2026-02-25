@@ -6,6 +6,7 @@ namespace PHPuboCop\Cop\Layout;
 
 use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
 use PHPuboCop\Util\AstWalker;
@@ -14,7 +15,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayItem;
 
-final class TrailingCommaInMultilineCop implements CopInterface, AutocorrectableCopInterface
+final class TrailingCommaInMultilineCop implements CopInterface, AutocorrectableCopInterface, SafeAutocorrectableCopInterface
 {
     public function name(): string
     {

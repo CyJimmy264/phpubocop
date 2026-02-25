@@ -6,10 +6,11 @@ namespace PHPuboCop\Cop\Layout;
 
 use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
 
-final class TrailingWhitespaceCop implements CopInterface, AutocorrectableCopInterface
+final class TrailingWhitespaceCop implements CopInterface, AutocorrectableCopInterface, SafeAutocorrectableCopInterface
 {
     public function name(): string
     {

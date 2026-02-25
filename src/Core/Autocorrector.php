@@ -6,6 +6,7 @@ namespace PHPuboCop\Core;
 
 use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Util\FileFinder;
 
 final class Autocorrector
@@ -28,7 +29,7 @@ final class Autocorrector
             $original = $content;
 
             foreach ($this->cops as $cop) {
-                if (!$cop instanceof AutocorrectableCopInterface) {
+                if (!$cop instanceof AutocorrectableCopInterface || !$cop instanceof SafeAutocorrectableCopInterface) {
                     continue;
                 }
 

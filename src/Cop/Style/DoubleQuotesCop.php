@@ -6,13 +6,14 @@ namespace PHPuboCop\Cop\Style;
 
 use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
 use PHPuboCop\Util\AstWalker;
 use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
 
-final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface
+final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface, SafeAutocorrectableCopInterface
 {
     public function name(): string
     {

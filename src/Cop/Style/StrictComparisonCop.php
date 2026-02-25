@@ -6,6 +6,7 @@ namespace PHPuboCop\Cop\Style;
 
 use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
 use PHPuboCop\Util\AstWalker;
@@ -13,7 +14,7 @@ use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Scalar;
 
-final class StrictComparisonCop implements CopInterface, AutocorrectableCopInterface
+final class StrictComparisonCop implements CopInterface, AutocorrectableCopInterface, SafeAutocorrectableCopInterface
 {
     public function name(): string
     {
