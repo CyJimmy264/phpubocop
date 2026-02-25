@@ -66,8 +66,8 @@ final class UselessAssignmentCop implements CopInterface
             }
 
             if ($node instanceof Expr\Assign) {
-                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
                 $visit($node->expr, $depth);
+                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
                 return;
             }
 

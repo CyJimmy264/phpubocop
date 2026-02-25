@@ -91,4 +91,22 @@ PHP
 
         self::assertCount(0, $offenses);
     }
+
+    public function testDoesNotReportWhenOverwriteExpressionReadsPreviousValue(): void
+    {
+        $cop = new UselessAssignmentCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+function demo(): array {
+    $ids = [];
+    $ids = array_values(array_unique($ids));
+    return $ids;
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
 }
