@@ -36,7 +36,7 @@
 - [x] Layout/TrailingCommaInMultiline
 Уже реализовано: добавление завершающей запятой в многострочных конструкциях.
 
-- [ ] Style/DoubleQuotes
+- [x] Style/DoubleQuotes
 Менять `\"text\"` на `'text'` только в безопасных случаях без интерполяции/escape-ловушек.
 
 - [ ] Style/StrictComparison

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PHPuboCop\Cop\Style;
 
+use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
@@ -11,7 +12,7 @@ use PHPuboCop\Util\AstWalker;
 use PhpParser\Node;
 use PhpParser\Node\Scalar\String_;
 
-final class DoubleQuotesCop implements CopInterface
+final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface
 {
     public function name(): string
     {
@@ -23,21 +24,7 @@ final class DoubleQuotesCop implements CopInterface
         $offenses = [];
 
         AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
-            if (!$node instanceof String_) {
-                return;
-            }
-
-            $kind = $node->getAttribute('kind');
-            if ($kind !== String_::KIND_DOUBLE_QUOTED) {
-                return;
-            }
-
-            $rawLiteral = $this->rawLiteral($file->content, $node);
-            if ($rawLiteral !== null && str_contains($rawLiteral, '\\')) {
-                return;
-            }
-
-            if (str_contains($node->value, "'")) {
+            if (!$this->isAutocorrectSafeDoubleQuotedString($file, $node)) {
                 return;
             }
 
@@ -51,6 +38,67 @@ final class DoubleQuotesCop implements CopInterface
         });
 
         return $offenses;
+    }
+
+    public function autocorrect(SourceFile $file, array $config = []): string
+    {
+        $replacements = [];
+
+        AstWalker::walk($file->ast(), function (Node $node) use (&$replacements, $file): void {
+            if (!$this->isAutocorrectSafeDoubleQuotedString($file, $node)) {
+                return;
+            }
+
+            $start = $node->getStartFilePos();
+            $end = $node->getEndFilePos();
+            if (!is_int($start) || !is_int($end) || $end < $start) {
+                return;
+            }
+
+            $replacements[] = [
+                'start' => $start,
+                'end' => $end,
+                'replacement' => "'" . $node->value . "'",
+            ];
+        });
+
+        if ($replacements === []) {
+            return $file->content;
+        }
+
+        usort($replacements, static fn (array $a, array $b): int => $b['start'] <=> $a['start']);
+
+        $content = $file->content;
+        foreach ($replacements as $replacement) {
+            $content = substr($content, 0, $replacement['start'])
+                . $replacement['replacement']
+                . substr($content, $replacement['end'] + 1);
+        }
+
+        return $content;
+    }
+
+    private function isAutocorrectSafeDoubleQuotedString(SourceFile $file, Node $node): bool
+    {
+        if (!$node instanceof String_) {
+            return false;
+        }
+
+        $kind = $node->getAttribute('kind');
+        if ($kind !== String_::KIND_DOUBLE_QUOTED) {
+            return false;
+        }
+
+        $rawLiteral = $this->rawLiteral($file->content, $node);
+        if ($rawLiteral !== null && str_contains($rawLiteral, '\\')) {
+            return false;
+        }
+
+        if (str_contains($node->value, "'")) {
+            return false;
+        }
+
+        return true;
     }
 
     private function rawLiteral(string $content, String_ $node): ?string

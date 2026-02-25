@@ -30,4 +30,24 @@ final class DoubleQuotesCopTest extends TestCase
 
         self::assertCount(0, $offenses);
     }
+
+    public function testAutocorrectConvertsSafeDoubleQuotedString(): void
+    {
+        $cop = new DoubleQuotesCop();
+        $source = new SourceFile('foo.php', "<?php\n\$a = \"hello\";\n");
+
+        $fixed = $cop->autocorrect($source);
+
+        self::assertSame("<?php\n\$a = 'hello';\n", $fixed);
+    }
+
+    public function testAutocorrectDoesNotTouchEscapedDoubleQuotedString(): void
+    {
+        $cop = new DoubleQuotesCop();
+        $source = new SourceFile('foo.php', "<?php\n\$a = \"\\n\";\n");
+
+        $fixed = $cop->autocorrect($source);
+
+        self::assertSame($source->content, $fixed);
+    }
 }
