@@ -49,6 +49,8 @@ Metrics/ParameterLists:
   Enabled: false
 Style/DoubleQuotes:
   Enabled: true
+Style/EmptyCatch:
+  Enabled: false
 Security/Unserialize:
   Enabled: false
 Security/Exec:

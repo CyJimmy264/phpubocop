@@ -19,6 +19,7 @@ use PHPuboCop\Cop\Metrics\MethodLengthCop;
 use PHPuboCop\Cop\Metrics\PerceivedComplexityCop;
 use PHPuboCop\Cop\Metrics\ParameterListsCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
+use PHPuboCop\Cop\Style\EmptyCatchCop;
 use PHPuboCop\Cop\Security\UnserializeCop;
 use PHPuboCop\Cop\Security\ExecCop;
 
@@ -37,6 +38,7 @@ final class CopRegistry
             new UselessAssignmentCop(),
             new UnusedVariableCop(),
             new DoubleQuotesCop(),
+            new EmptyCatchCop(),
             new AbcSizeCop(),
             new CyclomaticComplexityCop(),
             new MethodLengthCop(),

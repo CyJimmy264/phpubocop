@@ -50,6 +50,9 @@ Layout/TrailingWhitespace:
 Style/DoubleQuotes:
   Enabled: true
 
+Style/EmptyCatch:
+  Enabled: true
+
 Security/Unserialize:
   Enabled: true
 
@@ -109,6 +112,7 @@ Metrics/ParameterLists:
 - `Layout/TrailingWhitespace`
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
+- `Style/EmptyCatch`
 - `Security/Unserialize`
 - `Security/Exec`
 - `Lint/DuplicateArrayKey`

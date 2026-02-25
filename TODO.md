@@ -12,6 +12,7 @@
 - Lint/UnusedVariable
 - Lint/UselessAssignment
 - Style/DoubleQuotes
+- Style/EmptyCatch
 - Metrics/AbcSize
 - Metrics/CyclomaticComplexity
 - Metrics/MethodLength
@@ -21,9 +22,6 @@
 - Security/Unserialize
 
 ## План (следующие cop-ы)
-
-- Style/EmptyCatch
-Пустые catch без комментария/логирования лучше запрещать.
 
 - Style/BooleanLiteralComparison
 Убрать `=== true/false` там, где это шумит и маскирует намерение.
