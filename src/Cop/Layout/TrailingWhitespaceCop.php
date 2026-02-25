@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace PHPuboCop\Cop\Layout;
 
+use PHPuboCop\Cop\AutocorrectableCopInterface;
 use PHPuboCop\Cop\CopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
 
-final class TrailingWhitespaceCop implements CopInterface
+final class TrailingWhitespaceCop implements CopInterface, AutocorrectableCopInterface
 {
     public function name(): string
     {
@@ -35,5 +36,10 @@ final class TrailingWhitespaceCop implements CopInterface
         }
 
         return $offenses;
+    }
+
+    public function autocorrect(SourceFile $file, array $config = []): string
+    {
+        return preg_replace('/[ \t]+$/m', '', $file->content) ?? $file->content;
     }
 }

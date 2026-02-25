@@ -28,4 +28,21 @@
 
 ## План (следующие cop-ы)
 
+## Autocorrect Roadmap
+
+- [x] Layout/TrailingWhitespace
+Безопасно удалять хвостовые пробелы/табуляции в конце строк.
+
+- [x] Layout/TrailingCommaInMultiline
+Уже реализовано: добавление завершающей запятой в многострочных конструкциях.
+
+- [ ] Style/DoubleQuotes
+Менять `\"text\"` на `'text'` только в безопасных случаях без интерполяции/escape-ловушек.
+
+- [ ] Style/StrictComparison
+Ограниченный autocorrect `== -> ===`, `!= -> !==` только для безопасных сценариев.
+
+- [ ] Style/BooleanLiteralComparison
+Автозамена только там, где нет `T|false`-семантики и не меняется смысл.
+
 ## Ранее предложено (добавить в roadmap)
