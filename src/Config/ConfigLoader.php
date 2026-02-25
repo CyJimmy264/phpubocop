@@ -102,6 +102,9 @@ final class ConfigLoader
             'Style/EmptyCatch' => [
                 'Enabled' => true,
             ],
+            'Style/StrictComparison' => [
+                'Enabled' => true,
+            ],
         ];
     }
 }

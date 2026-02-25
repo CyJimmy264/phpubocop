@@ -16,6 +16,9 @@ Style/EmptyCatch:
 Style/BooleanLiteralComparison:
   Enabled: true
 
+Style/StrictComparison:
+  Enabled: true
+
 Security/Unserialize:
   Enabled: true
 

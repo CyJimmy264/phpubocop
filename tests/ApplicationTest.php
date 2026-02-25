@@ -53,6 +53,8 @@ Style/EmptyCatch:
   Enabled: false
 Style/BooleanLiteralComparison:
   Enabled: false
+Style/StrictComparison:
+  Enabled: false
 Security/Unserialize:
   Enabled: false
 Security/Exec:

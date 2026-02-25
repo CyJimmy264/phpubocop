@@ -15,6 +15,7 @@
 - Style/DoubleQuotes
 - Style/EmptyCatch
 - Style/BooleanLiteralComparison
+- Style/StrictComparison
 - Metrics/AbcSize
 - Metrics/CyclomaticComplexity
 - Metrics/MethodLength
@@ -27,9 +28,6 @@
 ## План (следующие cop-ы)
 
 ## Ранее предложено (добавить в roadmap)
-
-- Style/StrictComparison
-Предупреждать `==/!=` и предлагать `===/!==` там, где безопасно.
 
 - Layout/TrailingCommaInMultiline + --autocorrect
 Быстрая стандартизация стиля и хороший \"wow effect\" от автофикса.

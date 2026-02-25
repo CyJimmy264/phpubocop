@@ -56,6 +56,9 @@ Style/EmptyCatch:
 Style/BooleanLiteralComparison:
   Enabled: true
 
+Style/StrictComparison:
+  Enabled: true
+
 Security/Unserialize:
   Enabled: true
 
@@ -123,6 +126,7 @@ Metrics/ParameterLists:
 - `Style/DoubleQuotes`
 - `Style/EmptyCatch`
 - `Style/BooleanLiteralComparison`
+- `Style/StrictComparison`
 - `Security/Unserialize`
 - `Security/Exec`
 - `Security/EvalAndDynamicInclude`
