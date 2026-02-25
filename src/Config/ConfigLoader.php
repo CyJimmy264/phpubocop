@@ -62,6 +62,7 @@ final class ConfigLoader
             'Metrics/MethodLength' => [
                 'Enabled' => true,
                 'Max' => 20,
+                'CountAsOne' => ['array', 'heredoc', 'call_chain'],
             ],
             'Metrics/PerceivedComplexity' => [
                 'Enabled' => true,
