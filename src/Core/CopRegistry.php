@@ -16,6 +16,7 @@ use PHPuboCop\Cop\Metrics\MethodLengthCop;
 use PHPuboCop\Cop\Metrics\PerceivedComplexityCop;
 use PHPuboCop\Cop\Metrics\ParameterListsCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
+use PHPuboCop\Cop\Security\UnserializeCop;
 
 final class CopRegistry
 {
@@ -34,6 +35,7 @@ final class CopRegistry
             new MethodLengthCop(),
             new PerceivedComplexityCop(),
             new ParameterListsCop(),
+            new UnserializeCop(),
         ];
     }
 }

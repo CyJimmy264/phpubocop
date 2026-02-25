@@ -50,6 +50,9 @@ Layout/TrailingWhitespace:
 Style/DoubleQuotes:
   Enabled: true
 
+Security/Unserialize:
+  Enabled: true
+
 Lint/DuplicateArrayKey:
   Enabled: true
 
@@ -90,6 +93,7 @@ Metrics/ParameterLists:
 - `Layout/TrailingWhitespace`
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
+- `Security/Unserialize`
 - `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
 - `Lint/UnreachableCode`

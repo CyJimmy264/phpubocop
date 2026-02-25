@@ -43,6 +43,8 @@ Metrics/ParameterLists:
   Enabled: false
 Style/DoubleQuotes:
   Enabled: true
+Security/Unserialize:
+  Enabled: false
 YAML
 );
 

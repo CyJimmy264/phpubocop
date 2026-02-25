@@ -10,6 +10,9 @@ Layout/LineLength:
 Style/DoubleQuotes:
   Enabled: true
 
+Security/Unserialize:
+  Enabled: true
+
 Lint/DuplicateArrayKey:
   Enabled: true
 
