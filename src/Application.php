@@ -17,14 +17,14 @@ final class Application
 {
     public function run(array $argv): int
     {
-        [$paths, $configPath, $format, $autocorrect] = $this->parseArgs($argv);
+        [$paths, $configPath, $format, $autocorrect, $autocorrectAll] = $this->parseArgs($argv);
 
         $configLoader = new ConfigLoader();
         $config = $configLoader->load($configPath);
 
         $cops = CopRegistry::default();
         if ($autocorrect) {
-            (new Autocorrector($cops))->run($paths, $config);
+            (new Autocorrector($cops))->run($paths, $config, $autocorrectAll);
         }
 
         $runner = new Runner($cops);
@@ -52,6 +52,7 @@ final class Application
         $configPath = is_file('.phpubocop.yml') ? '.phpubocop.yml' : null;
         $format = 'text';
         $autocorrect = false;
+        $autocorrectAll = false;
 
         for ($i = 1, $count = count($argv); $i < $count; $i++) {
             $arg = $argv[$i];
@@ -87,6 +88,12 @@ final class Application
                 continue;
             }
 
+            if ($arg === '--autocorrect-all') {
+                $autocorrect = true;
+                $autocorrectAll = true;
+                continue;
+            }
+
             if (!str_starts_with($arg, '--')) {
                 $paths[] = $arg;
             }
@@ -96,7 +103,7 @@ final class Application
             $paths[] = '.';
         }
 
-        return [$paths, $configPath, strtolower($format), $autocorrect];
+        return [$paths, $configPath, strtolower($format), $autocorrect, $autocorrectAll];
     }
 
     private function resolveFormatter(string $format): FormatterInterface
@@ -113,13 +120,14 @@ final class Application
 PHPuboCop - RuboCop-inspired linter for PHP
 
 Usage:
-  phpubocop [path ...] [--config=.phpubocop.yml] [--format=text|json] [--autocorrect]
+  phpubocop [path ...] [--config=.phpubocop.yml] [--format=text|json] [--autocorrect] [--autocorrect-all]
 
 Examples:
   phpubocop src
   phpubocop src tests
   phpubocop . --format=json
   phpubocop src --autocorrect
+  phpubocop src --autocorrect-all
 
 TXT;
     }

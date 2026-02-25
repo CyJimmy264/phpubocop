@@ -19,7 +19,7 @@ final class Autocorrector
     }
 
     /** @param list<string> $paths */
-    public function run(array $paths, array $config): int
+    public function run(array $paths, array $config, bool $includeUnsafe = false): int
     {
         $files = $this->collectFiles($paths, $config);
         $changed = 0;
@@ -29,7 +29,11 @@ final class Autocorrector
             $original = $content;
 
             foreach ($this->cops as $cop) {
-                if (!$cop instanceof AutocorrectableCopInterface || !$cop instanceof SafeAutocorrectableCopInterface) {
+                if (!$cop instanceof AutocorrectableCopInterface) {
+                    continue;
+                }
+
+                if (!$includeUnsafe && !$cop instanceof SafeAutocorrectableCopInterface) {
                     continue;
                 }
 
