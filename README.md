@@ -50,6 +50,9 @@ Layout/TrailingWhitespace:
 Style/DoubleQuotes:
   Enabled: true
 
+Lint/DuplicateArrayKey:
+  Enabled: true
+
 Lint/EvalUsage:
   Enabled: true
 
@@ -76,6 +79,7 @@ Metrics/PerceivedComplexity:
 - `Layout/TrailingWhitespace`
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
+- `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
 - `Lint/UnusedVariable`
 - `Metrics/AbcSize`

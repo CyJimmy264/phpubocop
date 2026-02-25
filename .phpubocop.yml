@@ -10,6 +10,9 @@ Layout/LineLength:
 Style/DoubleQuotes:
   Enabled: true
 
+Lint/DuplicateArrayKey:
+  Enabled: true
+
 Lint/EvalUsage:
   Enabled: true
 

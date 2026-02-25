@@ -6,6 +6,7 @@ namespace PHPuboCop\Core;
 
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
+use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Lint\UnusedVariableCop;
 use PHPuboCop\Cop\Metrics\AbcSizeCop;
@@ -20,6 +21,7 @@ final class CopRegistry
         return [
             new TrailingWhitespaceCop(),
             new LineLengthCop(),
+            new DuplicateArrayKeyCop(),
             new EvalUsageCop(),
             new UnusedVariableCop(),
             new DoubleQuotesCop(),
