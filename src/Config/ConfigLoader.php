@@ -43,6 +43,9 @@ final class ConfigLoader
             'Lint/EvalUsage' => [
                 'Enabled' => true,
             ],
+            'Lint/SuppressedError' => [
+                'Enabled' => true,
+            ],
             'Lint/UnreachableCode' => [
                 'Enabled' => true,
             ],

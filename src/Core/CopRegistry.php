@@ -8,6 +8,7 @@ use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
 use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
+use PHPuboCop\Cop\Lint\SuppressedErrorCop;
 use PHPuboCop\Cop\Lint\UnreachableCodeCop;
 use PHPuboCop\Cop\Lint\UnusedVariableCop;
 use PHPuboCop\Cop\Metrics\AbcSizeCop;
@@ -28,6 +29,7 @@ final class CopRegistry
             new LineLengthCop(),
             new DuplicateArrayKeyCop(),
             new EvalUsageCop(),
+            new SuppressedErrorCop(),
             new UnreachableCodeCop(),
             new UnusedVariableCop(),
             new DoubleQuotesCop(),

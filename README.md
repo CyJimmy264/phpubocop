@@ -62,6 +62,9 @@ Lint/DuplicateArrayKey:
 Lint/EvalUsage:
   Enabled: true
 
+Lint/SuppressedError:
+  Enabled: true
+
 Lint/UnreachableCode:
   Enabled: true
 
@@ -104,6 +107,7 @@ Metrics/ParameterLists:
 - `Security/Exec`
 - `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
+- `Lint/SuppressedError`
 - `Lint/UnreachableCode`
 - `Lint/UnusedVariable`
 - `Metrics/AbcSize`

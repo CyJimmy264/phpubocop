@@ -6,6 +6,7 @@
 - Layout/LineLength
 - Lint/DuplicateArrayKey
 - Lint/EvalUsage
+- Lint/SuppressedError
 - Lint/UnreachableCode
 - Lint/UnusedVariable
 - Style/DoubleQuotes
@@ -19,31 +20,28 @@
 
 ## План (следующие cop-ы)
 
-1. Lint/SuppressedError (@...)
-- Подавление ошибок прячет реальные баги и усложняет диагностику.
+- Lint/UselessAssignment
+Хорошо ловит "навайбкоженные" хвосты и мёртвые переменные.
 
-2. Lint/UselessAssignment
-- Хорошо ловит "навайбкоженные" хвосты и мёртвые переменные.
+- Lint/ShadowingVariable
+Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
 
-3. Lint/ShadowingVariable
-- Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
+- Style/EmptyCatch
+Пустые catch без комментария/логирования лучше запрещать.
 
-4. Style/EmptyCatch
-- Пустые catch без комментария/логирования лучше запрещать.
+- Style/BooleanLiteralComparison
+Убрать `=== true/false` там, где это шумит и маскирует намерение.
 
-5. Style/BooleanLiteralComparison
-- Убрать `=== true/false` там, где это шумит и маскирует намерение.
-
-6. Lint/DuplicateMethod (если есть)
-- Полезно для раннего обнаружения accidental copy-paste.
+- Lint/DuplicateMethod (если есть)
+Полезно для раннего обнаружения accidental copy-paste.
 
 ## Ранее предложено (добавить в roadmap)
 
-1. Security/EvalAndDynamicInclude
-- Расширить текущий `EvalUsage` до `include/require` с динамическими путями.
+- Security/EvalAndDynamicInclude
+Расширить текущий `EvalUsage` до `include/require` с динамическими путями.
 
-2. Style/StrictComparison
-- Предупреждать `==/!=` и предлагать `===/!==` там, где безопасно.
+- Style/StrictComparison
+Предупреждать `==/!=` и предлагать `===/!==` там, где безопасно.
 
-3. Layout/TrailingCommaInMultiline + --autocorrect
-- Быстрая стандартизация стиля и хороший \"wow effect\" от автофикса.
+- Layout/TrailingCommaInMultiline + --autocorrect
+Быстрая стандартизация стиля и хороший \"wow effect\" от автофикса.
