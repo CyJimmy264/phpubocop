@@ -45,6 +45,8 @@ Style/DoubleQuotes:
   Enabled: true
 Security/Unserialize:
   Enabled: false
+Security/Exec:
+  Enabled: false
 YAML
 );
 

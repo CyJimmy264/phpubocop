@@ -14,29 +14,27 @@
 - Metrics/MethodLength
 - Metrics/ParameterLists
 - Metrics/PerceivedComplexity
+- Security/Exec
 - Security/Unserialize
 
 ## План (следующие cop-ы)
 
-1. Security/Exec (или набор для exec/shell_exec/system/passthru/proc_open)
-- В веб-проектах это самый частый источник RCE-рисков.
-
-2. Lint/SuppressedError (@...)
+1. Lint/SuppressedError (@...)
 - Подавление ошибок прячет реальные баги и усложняет диагностику.
 
-3. Lint/UselessAssignment
+2. Lint/UselessAssignment
 - Хорошо ловит "навайбкоженные" хвосты и мёртвые переменные.
 
-4. Lint/ShadowingVariable
+3. Lint/ShadowingVariable
 - Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
 
-5. Style/EmptyCatch
+4. Style/EmptyCatch
 - Пустые catch без комментария/логирования лучше запрещать.
 
-6. Style/BooleanLiteralComparison
+5. Style/BooleanLiteralComparison
 - Убрать `=== true/false` там, где это шумит и маскирует намерение.
 
-7. Lint/DuplicateMethod (если есть)
+6. Lint/DuplicateMethod (если есть)
 - Полезно для раннего обнаружения accidental copy-paste.
 
 ## Ранее предложено (добавить в roadmap)

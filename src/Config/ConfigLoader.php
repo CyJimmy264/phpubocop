@@ -74,6 +74,9 @@ final class ConfigLoader
             'Security/Unserialize' => [
                 'Enabled' => true,
             ],
+            'Security/Exec' => [
+                'Enabled' => true,
+            ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],

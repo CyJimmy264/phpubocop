@@ -53,6 +53,9 @@ Style/DoubleQuotes:
 Security/Unserialize:
   Enabled: true
 
+Security/Exec:
+  Enabled: true
+
 Lint/DuplicateArrayKey:
   Enabled: true
 
@@ -94,6 +97,7 @@ Metrics/ParameterLists:
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
 - `Security/Unserialize`
+- `Security/Exec`
 - `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
 - `Lint/UnreachableCode`
