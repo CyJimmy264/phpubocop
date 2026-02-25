@@ -65,6 +65,9 @@ Lint/EvalUsage:
 Lint/SuppressedError:
   Enabled: true
 
+Lint/ShadowingVariable:
+  Enabled: true
+
 Lint/UnreachableCode:
   Enabled: true
 
@@ -111,6 +114,7 @@ Metrics/ParameterLists:
 - `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
 - `Lint/SuppressedError`
+- `Lint/ShadowingVariable`
 - `Lint/UnreachableCode`
 - `Lint/UselessAssignment`
 - `Lint/UnusedVariable`

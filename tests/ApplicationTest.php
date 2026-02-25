@@ -29,6 +29,8 @@ Lint/EvalUsage:
   Enabled: false
 Lint/SuppressedError:
   Enabled: false
+Lint/ShadowingVariable:
+  Enabled: false
 Lint/UnreachableCode:
   Enabled: false
 Lint/UselessAssignment:

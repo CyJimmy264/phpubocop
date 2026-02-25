@@ -46,6 +46,9 @@ final class ConfigLoader
             'Lint/SuppressedError' => [
                 'Enabled' => true,
             ],
+            'Lint/ShadowingVariable' => [
+                'Enabled' => true,
+            ],
             'Lint/UnreachableCode' => [
                 'Enabled' => true,
             ],

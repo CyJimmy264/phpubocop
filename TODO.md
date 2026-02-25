@@ -7,6 +7,7 @@
 - Lint/DuplicateArrayKey
 - Lint/EvalUsage
 - Lint/SuppressedError
+- Lint/ShadowingVariable
 - Lint/UnreachableCode
 - Lint/UnusedVariable
 - Lint/UselessAssignment
@@ -20,9 +21,6 @@
 - Security/Unserialize
 
 ## План (следующие cop-ы)
-
-- Lint/ShadowingVariable
-Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
 
 - Style/EmptyCatch
 Пустые catch без комментария/логирования лучше запрещать.

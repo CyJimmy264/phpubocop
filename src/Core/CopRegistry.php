@@ -9,6 +9,7 @@ use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
 use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Lint\SuppressedErrorCop;
+use PHPuboCop\Cop\Lint\ShadowingVariableCop;
 use PHPuboCop\Cop\Lint\UnreachableCodeCop;
 use PHPuboCop\Cop\Lint\UselessAssignmentCop;
 use PHPuboCop\Cop\Lint\UnusedVariableCop;
@@ -31,6 +32,7 @@ final class CopRegistry
             new DuplicateArrayKeyCop(),
             new EvalUsageCop(),
             new SuppressedErrorCop(),
+            new ShadowingVariableCop(),
             new UnreachableCodeCop(),
             new UselessAssignmentCop(),
             new UnusedVariableCop(),
