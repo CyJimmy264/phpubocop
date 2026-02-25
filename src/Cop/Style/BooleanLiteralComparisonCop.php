@@ -85,15 +85,23 @@ final class BooleanLiteralComparisonCop implements CopInterface
 
         if ($this->isBooleanComparison($node)) {
             [$literalBool, $otherSide] = $this->extractBooleanComparison($node);
-            if (!($literalBool === false && $this->isFalseableExpression($otherSide, $falseableVars))) {
-                $offenses[] = new Offense(
-                    $this->name(),
-                    $file->path,
-                    (int) $node->getStartLine(),
-                    1,
-                    'Avoid comparing to boolean literals; simplify the condition.'
-                );
+            if ($literalBool === false && $this->isFalseableExpression($otherSide, $falseableVars)) {
+                $this->walkChildren($node, $file, $offenses, $falseableVars);
+                return;
             }
+
+            if (!$this->isObviouslyBooleanExpression($otherSide)) {
+                $this->walkChildren($node, $file, $offenses, $falseableVars);
+                return;
+            }
+
+            $offenses[] = new Offense(
+                $this->name(),
+                $file->path,
+                (int) $node->getStartLine(),
+                1,
+                'Avoid comparing to boolean literals; simplify the condition.'
+            );
         }
 
         $this->walkChildren($node, $file, $offenses, $falseableVars);
@@ -171,5 +179,77 @@ final class BooleanLiteralComparisonCop implements CopInterface
         }
 
         return in_array(strtolower($expr->name->toString()), self::FALSEABLE_FUNCTIONS, true);
+    }
+
+    private function isObviouslyBooleanExpression(Node $expr): bool
+    {
+        if ($expr instanceof Expr\ConstFetch) {
+            $name = strtolower($expr->name->toString());
+            return $name === 'true' || $name === 'false';
+        }
+
+        if ($expr instanceof Expr\BooleanNot
+            || $expr instanceof Expr\Empty_
+            || $expr instanceof Expr\Isset_
+            || $expr instanceof Expr\Instanceof_) {
+            return true;
+        }
+
+        if ($expr instanceof Expr\BinaryOp\BooleanAnd
+            || $expr instanceof Expr\BinaryOp\BooleanOr
+            || $expr instanceof Expr\BinaryOp\LogicalAnd
+            || $expr instanceof Expr\BinaryOp\LogicalOr
+            || $expr instanceof Expr\BinaryOp\Equal
+            || $expr instanceof Expr\BinaryOp\NotEqual
+            || $expr instanceof Expr\BinaryOp\Identical
+            || $expr instanceof Expr\BinaryOp\NotIdentical
+            || $expr instanceof Expr\BinaryOp\Smaller
+            || $expr instanceof Expr\BinaryOp\SmallerOrEqual
+            || $expr instanceof Expr\BinaryOp\Greater
+            || $expr instanceof Expr\BinaryOp\GreaterOrEqual
+            || $expr instanceof Expr\BinaryOp\Spaceship) {
+            return true;
+        }
+
+        if ($expr instanceof Expr\Variable && is_string($expr->name)) {
+            return $this->isBooleanLikeName($expr->name);
+        }
+
+        if ($expr instanceof Expr\PropertyFetch && $expr->name instanceof Node\Identifier) {
+            return $this->isBooleanLikeName($expr->name->toString());
+        }
+
+        if ($expr instanceof Expr\StaticPropertyFetch && $expr->name instanceof Node\VarLikeIdentifier) {
+            return $this->isBooleanLikeName($expr->name->toString());
+        }
+
+        if ($expr instanceof Expr\FuncCall && $expr->name instanceof Node\Name) {
+            return $this->isBooleanLikeName($expr->name->toString());
+        }
+
+        if (($expr instanceof Expr\MethodCall || $expr instanceof Expr\NullsafeMethodCall)
+            && $expr->name instanceof Node\Identifier) {
+            return $this->isBooleanLikeName($expr->name->toString());
+        }
+
+        if ($expr instanceof Expr\StaticCall && $expr->name instanceof Node\Identifier) {
+            return $this->isBooleanLikeName($expr->name->toString());
+        }
+
+        return false;
+    }
+
+    private function isBooleanLikeName(string $name): bool
+    {
+        $normalized = ltrim($name, '$');
+        if ($normalized === '') {
+            return false;
+        }
+
+        if (str_ends_with(strtolower($normalized), '_flag')) {
+            return true;
+        }
+
+        return preg_match('/^(is|has|can|should)(_|[A-Z]).+$/', $normalized) === 1;
     }
 }

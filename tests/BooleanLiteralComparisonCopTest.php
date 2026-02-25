@@ -15,11 +15,11 @@ final class BooleanLiteralComparisonCopTest extends TestCase
         $cop = new BooleanLiteralComparisonCop();
         $source = new SourceFile('foo.php', <<<'PHP'
 <?php
-if ($ok === true) {
+if ($isReady === true) {
     return;
 }
 
-if (false != $ready) {
+if (false != $hasData) {
     return;
 }
 PHP
@@ -29,6 +29,26 @@ PHP
 
         self::assertCount(2, $offenses);
         self::assertSame('Style/BooleanLiteralComparison', $offenses[0]->copName);
+    }
+
+    public function testDoesNotReportUnknownVariableBooleanComparisons(): void
+    {
+        $cop = new BooleanLiteralComparisonCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+if ($ok === true) {
+    return;
+}
+
+if ($ready === false) {
+    return;
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
     }
 
     public function testDoesNotReportFalseChecksForKnownFalseableFunctionResultVariable(): void
