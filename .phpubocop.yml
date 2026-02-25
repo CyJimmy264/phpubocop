@@ -30,6 +30,8 @@ Security/Exec:
 
 Security/EvalAndDynamicInclude:
   Enabled: true
+  AllowedDynamicIncludePatterns:
+    - "\\$_SERVER\\s*\\[\\s*[\"']DOCUMENT_ROOT[\"']\\s*\\]"
 
 Lint/DuplicateArrayKey:
   Enabled: true
