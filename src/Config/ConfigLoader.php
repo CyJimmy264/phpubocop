@@ -49,6 +49,9 @@ final class ConfigLoader
             'Lint/UnreachableCode' => [
                 'Enabled' => true,
             ],
+            'Lint/UselessAssignment' => [
+                'Enabled' => true,
+            ],
             'Lint/UnusedVariable' => [
                 'Enabled' => true,
                 'IgnorePrefixedUnderscore' => true,

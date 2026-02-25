@@ -31,6 +31,8 @@ Lint/SuppressedError:
   Enabled: false
 Lint/UnreachableCode:
   Enabled: false
+Lint/UselessAssignment:
+  Enabled: false
 Lint/UnusedVariable:
   Enabled: false
 Metrics/AbcSize:

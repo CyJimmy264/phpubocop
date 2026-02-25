@@ -28,6 +28,9 @@ Lint/SuppressedError:
 Lint/UnreachableCode:
   Enabled: true
 
+Lint/UselessAssignment:
+  Enabled: true
+
 Lint/UnusedVariable:
   Enabled: true
   IgnorePrefixedUnderscore: true

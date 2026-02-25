@@ -68,6 +68,9 @@ Lint/SuppressedError:
 Lint/UnreachableCode:
   Enabled: true
 
+Lint/UselessAssignment:
+  Enabled: true
+
 Lint/UnusedVariable:
   Enabled: true
   IgnorePrefixedUnderscore: true
@@ -109,6 +112,7 @@ Metrics/ParameterLists:
 - `Lint/EvalUsage`
 - `Lint/SuppressedError`
 - `Lint/UnreachableCode`
+- `Lint/UselessAssignment`
 - `Lint/UnusedVariable`
 - `Metrics/AbcSize`
 - `Metrics/CyclomaticComplexity`

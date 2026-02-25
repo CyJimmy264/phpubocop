@@ -10,6 +10,7 @@ use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Lint\SuppressedErrorCop;
 use PHPuboCop\Cop\Lint\UnreachableCodeCop;
+use PHPuboCop\Cop\Lint\UselessAssignmentCop;
 use PHPuboCop\Cop\Lint\UnusedVariableCop;
 use PHPuboCop\Cop\Metrics\AbcSizeCop;
 use PHPuboCop\Cop\Metrics\CyclomaticComplexityCop;
@@ -31,6 +32,7 @@ final class CopRegistry
             new EvalUsageCop(),
             new SuppressedErrorCop(),
             new UnreachableCodeCop(),
+            new UselessAssignmentCop(),
             new UnusedVariableCop(),
             new DoubleQuotesCop(),
             new AbcSizeCop(),

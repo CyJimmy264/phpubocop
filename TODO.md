@@ -9,6 +9,7 @@
 - Lint/SuppressedError
 - Lint/UnreachableCode
 - Lint/UnusedVariable
+- Lint/UselessAssignment
 - Style/DoubleQuotes
 - Metrics/AbcSize
 - Metrics/CyclomaticComplexity
@@ -19,9 +20,6 @@
 - Security/Unserialize
 
 ## План (следующие cop-ы)
-
-- Lint/UselessAssignment
-Хорошо ловит "навайбкоженные" хвосты и мёртвые переменные.
 
 - Lint/ShadowingVariable
 Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
