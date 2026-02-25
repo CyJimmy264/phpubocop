@@ -35,6 +35,8 @@ Metrics/AbcSize:
   Enabled: false
 Metrics/CyclomaticComplexity:
   Enabled: false
+Metrics/MethodLength:
+  Enabled: false
 Metrics/PerceivedComplexity:
   Enabled: false
 Style/DoubleQuotes:

@@ -12,6 +12,7 @@ use PHPuboCop\Cop\Lint\UnreachableCodeCop;
 use PHPuboCop\Cop\Lint\UnusedVariableCop;
 use PHPuboCop\Cop\Metrics\AbcSizeCop;
 use PHPuboCop\Cop\Metrics\CyclomaticComplexityCop;
+use PHPuboCop\Cop\Metrics\MethodLengthCop;
 use PHPuboCop\Cop\Metrics\PerceivedComplexityCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
 
@@ -29,6 +30,7 @@ final class CopRegistry
             new DoubleQuotesCop(),
             new AbcSizeCop(),
             new CyclomaticComplexityCop(),
+            new MethodLengthCop(),
             new PerceivedComplexityCop(),
         ];
     }

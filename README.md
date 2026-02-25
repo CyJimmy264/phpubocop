@@ -72,6 +72,10 @@ Metrics/CyclomaticComplexity:
   Enabled: true
   Max: 7
 
+Metrics/MethodLength:
+  Enabled: true
+  Max: 20
+
 Metrics/PerceivedComplexity:
   Enabled: true
   Max: 8
@@ -88,6 +92,7 @@ Metrics/PerceivedComplexity:
 - `Lint/UnusedVariable`
 - `Metrics/AbcSize`
 - `Metrics/CyclomaticComplexity`
+- `Metrics/MethodLength`
 - `Metrics/PerceivedComplexity`
 
 ## Architecture

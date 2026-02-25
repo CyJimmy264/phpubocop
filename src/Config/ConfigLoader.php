@@ -59,6 +59,10 @@ final class ConfigLoader
                 'Enabled' => true,
                 'Max' => 7,
             ],
+            'Metrics/MethodLength' => [
+                'Enabled' => true,
+                'Max' => 20,
+            ],
             'Metrics/PerceivedComplexity' => [
                 'Enabled' => true,
                 'Max' => 8,
