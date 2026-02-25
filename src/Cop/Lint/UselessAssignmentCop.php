@@ -39,44 +39,45 @@ final class UselessAssignmentCop implements CopInterface
     private function analyzeScope(Node $scope, string $path): array
     {
         $offenses = [];
-        $pendingAssignmentLine = [];
+        /** @var array<string,array{line:int,depth:int}> $pendingAssignment */
+        $pendingAssignment = [];
 
-        $markRead = function (string $name) use (&$pendingAssignmentLine): void {
-            unset($pendingAssignmentLine[$name]);
+        $markRead = function (string $name) use (&$pendingAssignment): void {
+            unset($pendingAssignment[$name]);
         };
 
-        $markAssignment = function (string $name, int $line) use (&$pendingAssignmentLine, &$offenses, $path): void {
-            if (isset($pendingAssignmentLine[$name])) {
+        $markAssignment = function (string $name, int $line, int $depth) use (&$pendingAssignment, &$offenses, $path): void {
+            if (isset($pendingAssignment[$name]) && $pendingAssignment[$name]['depth'] === $depth) {
                 $offenses[] = new Offense(
                     $this->name(),
                     $path,
-                    $pendingAssignmentLine[$name],
+                    $pendingAssignment[$name]['line'],
                     1,
                     sprintf('Useless assignment to $%s. Value is overwritten before being read.', $name)
                 );
             }
 
-            $pendingAssignmentLine[$name] = $line;
+            $pendingAssignment[$name] = ['line' => $line, 'depth' => $depth];
         };
 
-        $visit = function (Node $node) use (&$visit, $scope, $markRead, $markAssignment): void {
+        $visit = function (Node $node, int $depth = 0) use (&$visit, $scope, $markRead, $markAssignment): void {
             if ($node !== $scope && $this->isScope($node)) {
                 return;
             }
 
             if ($node instanceof Expr\Assign) {
-                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $markAssignment);
-                $visit($node->expr);
+                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
+                $visit($node->expr, $depth);
                 return;
             }
 
             if ($node instanceof Expr\AssignOp || $node instanceof Expr\AssignRef) {
                 $this->markReadVariable($node->var, $markRead);
-                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $markAssignment);
+                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
                 if ($node instanceof Expr\AssignOp) {
-                    $visit($node->expr);
+                    $visit($node->expr, $depth);
                 } else {
-                    $visit($node->expr);
+                    $visit($node->expr, $depth);
                 }
                 return;
             }
@@ -86,25 +87,27 @@ final class UselessAssignmentCop implements CopInterface
                 return;
             }
 
+            $nextDepth = $depth + ($this->isControlFlowNode($node) ? 1 : 0);
+
             foreach ($node->getSubNodeNames() as $subNodeName) {
                 $subNode = $node->{$subNodeName};
 
                 if ($subNode instanceof Node) {
-                    $visit($subNode);
+                    $visit($subNode, $nextDepth);
                     continue;
                 }
 
                 if (is_array($subNode)) {
                     foreach ($subNode as $child) {
                         if ($child instanceof Node) {
-                            $visit($child);
+                            $visit($child, $nextDepth);
                         }
                     }
                 }
             }
         };
 
-        $visit($scope);
+        $visit($scope, 0);
 
         return $offenses;
     }
@@ -115,6 +118,29 @@ final class UselessAssignmentCop implements CopInterface
             || $node instanceof Node\Stmt\ClassMethod
             || $node instanceof Expr\Closure
             || $node instanceof Expr\ArrowFunction;
+    }
+
+    private function isControlFlowNode(Node $node): bool
+    {
+        return $node instanceof Node\Stmt\If_
+            || $node instanceof Node\Stmt\ElseIf_
+            || $node instanceof Node\Stmt\Else_
+            || $node instanceof Node\Stmt\For_
+            || $node instanceof Node\Stmt\Foreach_
+            || $node instanceof Node\Stmt\While_
+            || $node instanceof Node\Stmt\Do_
+            || $node instanceof Node\Stmt\Switch_
+            || $node instanceof Node\Stmt\Case_
+            || $node instanceof Node\Stmt\TryCatch
+            || $node instanceof Node\Stmt\Catch_
+            || $node instanceof Expr\Ternary
+            || $node instanceof Expr\BinaryOp\BooleanAnd
+            || $node instanceof Expr\BinaryOp\LogicalAnd
+            || $node instanceof Expr\BinaryOp\BooleanOr
+            || $node instanceof Expr\BinaryOp\LogicalOr
+            || $node instanceof Expr\BinaryOp\LogicalXor
+            || $node instanceof Expr\BinaryOp\Coalesce
+            || $node instanceof Expr\Match_;
     }
 
     /** @param callable(string): void $markRead */
@@ -143,11 +169,11 @@ final class UselessAssignmentCop implements CopInterface
         }
     }
 
-    /** @param callable(string,int): void $markAssignment */
-    private function markAssignedVariable(Node $target, int $line, callable $markAssignment): void
+    /** @param callable(string,int,int): void $markAssignment */
+    private function markAssignedVariable(Node $target, int $line, int $depth, callable $markAssignment): void
     {
         if ($target instanceof Expr\Variable && is_string($target->name)) {
-            $markAssignment($target->name, $line);
+            $markAssignment($target->name, $line, $depth);
         }
     }
 }

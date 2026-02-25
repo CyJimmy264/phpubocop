@@ -69,4 +69,26 @@ PHP
         self::assertSame(3, $offenses[0]->line);
         self::assertSame(4, $offenses[1]->line);
     }
+
+    public function testDoesNotReportDefaultAssignmentOverwrittenOnlyInsideConditionalBranch(): void
+    {
+        $cop = new UselessAssignmentCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+function demo(bool $recalculate): float {
+    $discountAbs = 0.0;
+
+    if ($recalculate) {
+        $discountAbs = 5.0;
+    }
+
+    return $discountAbs;
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
 }
