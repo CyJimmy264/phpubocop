@@ -90,6 +90,9 @@ final class ConfigLoader
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],
+            'Style/BooleanLiteralComparison' => [
+                'Enabled' => true,
+            ],
             'Style/EmptyCatch' => [
                 'Enabled' => true,
             ],

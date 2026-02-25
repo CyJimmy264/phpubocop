@@ -13,6 +13,7 @@
 - Lint/UselessAssignment
 - Style/DoubleQuotes
 - Style/EmptyCatch
+- Style/BooleanLiteralComparison
 - Metrics/AbcSize
 - Metrics/CyclomaticComplexity
 - Metrics/MethodLength
@@ -22,9 +23,6 @@
 - Security/Unserialize
 
 ## План (следующие cop-ы)
-
-- Style/BooleanLiteralComparison
-Убрать `=== true/false` там, где это шумит и маскирует намерение.
 
 - Lint/DuplicateMethod (если есть)
 Полезно для раннего обнаружения accidental copy-paste.

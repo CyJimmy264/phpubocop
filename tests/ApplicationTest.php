@@ -51,6 +51,8 @@ Style/DoubleQuotes:
   Enabled: true
 Style/EmptyCatch:
   Enabled: false
+Style/BooleanLiteralComparison:
+  Enabled: false
 Security/Unserialize:
   Enabled: false
 Security/Exec:

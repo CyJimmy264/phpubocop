@@ -53,6 +53,9 @@ Style/DoubleQuotes:
 Style/EmptyCatch:
   Enabled: true
 
+Style/BooleanLiteralComparison:
+  Enabled: true
+
 Security/Unserialize:
   Enabled: true
 
@@ -113,6 +116,7 @@ Metrics/ParameterLists:
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
 - `Style/EmptyCatch`
+- `Style/BooleanLiteralComparison`
 - `Security/Unserialize`
 - `Security/Exec`
 - `Lint/DuplicateArrayKey`
