@@ -25,6 +25,8 @@ Layout/LineLength:
   Enabled: false
 Layout/TrailingWhitespace:
   Enabled: false
+Layout/TrailingCommaInMultiline:
+  Enabled: false
 Lint/EvalUsage:
   Enabled: false
 Lint/SuppressedError:
@@ -81,5 +83,89 @@ YAML
         self::assertSame(1, $exitCode);
         self::assertIsArray($decoded);
         self::assertCount(2, $decoded['offenses']);
+    }
+
+    public function testAutocorrectRewritesFileForAutocorrectableCop(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_autocorrect_' . uniqid('', true);
+        mkdir($dir, 0777, true);
+
+        $file = $dir . '/sample.php';
+        $config = $dir . '/.phpubocop.yml';
+
+        file_put_contents($file, <<<'PHP'
+<?php
+$data = [
+    'a' => 1,
+    'b' => 2
+];
+PHP
+);
+
+        file_put_contents($config, <<<'YAML'
+Layout/LineLength:
+  Enabled: false
+Layout/TrailingWhitespace:
+  Enabled: false
+Layout/TrailingCommaInMultiline:
+  Enabled: true
+Lint/DuplicateArrayKey:
+  Enabled: false
+Lint/DuplicateMethod:
+  Enabled: false
+Lint/EvalUsage:
+  Enabled: false
+Lint/SuppressedError:
+  Enabled: false
+Lint/ShadowingVariable:
+  Enabled: false
+Lint/UnreachableCode:
+  Enabled: false
+Lint/UselessAssignment:
+  Enabled: false
+Lint/UnusedVariable:
+  Enabled: false
+Style/DoubleQuotes:
+  Enabled: false
+Style/EmptyCatch:
+  Enabled: false
+Style/BooleanLiteralComparison:
+  Enabled: false
+Style/StrictComparison:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Metrics/ParameterLists:
+  Enabled: false
+Security/Unserialize:
+  Enabled: false
+Security/Exec:
+  Enabled: false
+Security/EvalAndDynamicInclude:
+  Enabled: false
+YAML
+);
+
+        $app = new Application();
+
+        ob_start();
+        $exitCode = $app->run([
+            'phpubocop',
+            $file,
+            '--config=' . $config,
+            '--autocorrect',
+        ]);
+        ob_end_clean();
+
+        $content = (string) file_get_contents($file);
+
+        self::assertSame(0, $exitCode);
+        self::assertStringContainsString("'b' => 2,", $content);
     }
 }

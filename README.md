@@ -44,6 +44,9 @@ Layout/LineLength:
   Enabled: true
   Max: 120
 
+Layout/TrailingCommaInMultiline:
+  Enabled: true
+
 Layout/TrailingWhitespace:
   Enabled: true
 
@@ -123,6 +126,7 @@ Metrics/ParameterLists:
 
 - `Layout/TrailingWhitespace`
 - `Layout/LineLength`
+- `Layout/TrailingCommaInMultiline`
 - `Style/DoubleQuotes`
 - `Style/EmptyCatch`
 - `Style/BooleanLiteralComparison`

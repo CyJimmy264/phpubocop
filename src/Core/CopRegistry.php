@@ -6,6 +6,7 @@ namespace PHPuboCop\Core;
 
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
+use PHPuboCop\Cop\Layout\TrailingCommaInMultilineCop;
 use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
 use PHPuboCop\Cop\Lint\DuplicateMethodCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
@@ -33,6 +34,7 @@ final class CopRegistry
     {
         return [
             new TrailingWhitespaceCop(),
+            new TrailingCommaInMultilineCop(),
             new LineLengthCop(),
             new DuplicateArrayKeyCop(),
             new DuplicateMethodCop(),

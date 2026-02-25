@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PHPuboCop;
 
 use PHPuboCop\Config\ConfigLoader;
+use PHPuboCop\Core\Autocorrector;
 use PHPuboCop\Core\CopRegistry;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\Runner;
@@ -16,12 +17,17 @@ final class Application
 {
     public function run(array $argv): int
     {
-        [$paths, $configPath, $format] = $this->parseArgs($argv);
+        [$paths, $configPath, $format, $autocorrect] = $this->parseArgs($argv);
 
         $configLoader = new ConfigLoader();
         $config = $configLoader->load($configPath);
 
-        $runner = new Runner(CopRegistry::default());
+        $cops = CopRegistry::default();
+        if ($autocorrect) {
+            (new Autocorrector($cops))->run($paths, $config);
+        }
+
+        $runner = new Runner($cops);
         $offenses = [];
         foreach ($paths as $path) {
             foreach ($runner->run($path, $config) as $offense) {
@@ -45,6 +51,7 @@ final class Application
         $paths = [];
         $configPath = is_file('.phpubocop.yml') ? '.phpubocop.yml' : null;
         $format = 'text';
+        $autocorrect = false;
 
         for ($i = 1, $count = count($argv); $i < $count; $i++) {
             $arg = $argv[$i];
@@ -75,6 +82,11 @@ final class Application
                 continue;
             }
 
+            if ($arg === '--autocorrect') {
+                $autocorrect = true;
+                continue;
+            }
+
             if (!str_starts_with($arg, '--')) {
                 $paths[] = $arg;
             }
@@ -84,7 +96,7 @@ final class Application
             $paths[] = '.';
         }
 
-        return [$paths, $configPath, strtolower($format)];
+        return [$paths, $configPath, strtolower($format), $autocorrect];
     }
 
     private function resolveFormatter(string $format): FormatterInterface
@@ -101,12 +113,13 @@ final class Application
 PHPuboCop - RuboCop-inspired linter for PHP
 
 Usage:
-  phpubocop [path ...] [--config=.phpubocop.yml] [--format=text|json]
+  phpubocop [path ...] [--config=.phpubocop.yml] [--format=text|json] [--autocorrect]
 
 Examples:
   phpubocop src
   phpubocop src tests
   phpubocop . --format=json
+  phpubocop src --autocorrect
 
 TXT;
     }

@@ -37,6 +37,9 @@ final class ConfigLoader
             'Layout/TrailingWhitespace' => [
                 'Enabled' => true,
             ],
+            'Layout/TrailingCommaInMultiline' => [
+                'Enabled' => true,
+            ],
             'Lint/DuplicateArrayKey' => [
                 'Enabled' => true,
             ],

@@ -4,6 +4,7 @@
 
 - Layout/TrailingWhitespace
 - Layout/LineLength
+- Layout/TrailingCommaInMultiline
 - Lint/DuplicateArrayKey
 - Lint/DuplicateMethod
 - Lint/EvalUsage
@@ -28,6 +29,3 @@
 ## План (следующие cop-ы)
 
 ## Ранее предложено (добавить в roadmap)
-
-- Layout/TrailingCommaInMultiline + --autocorrect
-Быстрая стандартизация стиля и хороший \"wow effect\" от автофикса.

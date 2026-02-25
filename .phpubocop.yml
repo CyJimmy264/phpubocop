@@ -7,6 +7,9 @@ Layout/LineLength:
   Enabled: true
   Max: 120
 
+Layout/TrailingCommaInMultiline:
+  Enabled: true
+
 Style/DoubleQuotes:
   Enabled: true
 
