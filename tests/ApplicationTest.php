@@ -39,6 +39,8 @@ Metrics/MethodLength:
   Enabled: false
 Metrics/PerceivedComplexity:
   Enabled: false
+Metrics/ParameterLists:
+  Enabled: false
 Style/DoubleQuotes:
   Enabled: true
 YAML

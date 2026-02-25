@@ -39,3 +39,7 @@ Metrics/MethodLength:
 Metrics/PerceivedComplexity:
   Enabled: true
   Max: 8
+
+Metrics/ParameterLists:
+  Enabled: true
+  Max: 5

@@ -12,6 +12,7 @@
 - Metrics/AbcSize
 - Metrics/CyclomaticComplexity
 - Metrics/MethodLength
+- Metrics/ParameterLists
 - Metrics/PerceivedComplexity
 
 ## План (следующие cop-ы)
@@ -31,16 +32,13 @@
 5. Lint/ShadowingVariable
 - Теневая переменная в длинных PHP-функциях часто даёт тихие логические ошибки.
 
-6. Metrics/ParameterLists
-- Слишком длинные сигнатуры быстро убивают читаемость и тестируемость.
-
-7. Style/EmptyCatch
+6. Style/EmptyCatch
 - Пустые catch без комментария/логирования лучше запрещать.
 
-8. Style/BooleanLiteralComparison
+7. Style/BooleanLiteralComparison
 - Убрать `=== true/false` там, где это шумит и маскирует намерение.
 
-9. Lint/DuplicateMethod (если есть)
+8. Lint/DuplicateMethod (если есть)
 - Полезно для раннего обнаружения accidental copy-paste.
 
 ## Ранее предложено (добавить в roadmap)

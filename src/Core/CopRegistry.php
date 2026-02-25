@@ -14,6 +14,7 @@ use PHPuboCop\Cop\Metrics\AbcSizeCop;
 use PHPuboCop\Cop\Metrics\CyclomaticComplexityCop;
 use PHPuboCop\Cop\Metrics\MethodLengthCop;
 use PHPuboCop\Cop\Metrics\PerceivedComplexityCop;
+use PHPuboCop\Cop\Metrics\ParameterListsCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
 
 final class CopRegistry
@@ -32,6 +33,7 @@ final class CopRegistry
             new CyclomaticComplexityCop(),
             new MethodLengthCop(),
             new PerceivedComplexityCop(),
+            new ParameterListsCop(),
         ];
     }
 }

@@ -67,6 +67,10 @@ final class ConfigLoader
                 'Enabled' => true,
                 'Max' => 8,
             ],
+            'Metrics/ParameterLists' => [
+                'Enabled' => true,
+                'Max' => 5,
+            ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],

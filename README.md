@@ -79,6 +79,10 @@ Metrics/MethodLength:
 Metrics/PerceivedComplexity:
   Enabled: true
   Max: 8
+
+Metrics/ParameterLists:
+  Enabled: true
+  Max: 5
 ```
 
 ## Included cops (MVP)
@@ -94,6 +98,7 @@ Metrics/PerceivedComplexity:
 - `Metrics/CyclomaticComplexity`
 - `Metrics/MethodLength`
 - `Metrics/PerceivedComplexity`
+- `Metrics/ParameterLists`
 
 ## Architecture
 
