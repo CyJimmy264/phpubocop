@@ -53,6 +53,11 @@ Style/DoubleQuotes:
 Lint/EvalUsage:
   Enabled: true
 
+Lint/UnusedVariable:
+  Enabled: true
+  IgnorePrefixedUnderscore: true
+  IgnoreParameters: true
+
 Metrics/AbcSize:
   Enabled: true
   Max: 17
@@ -72,6 +77,7 @@ Metrics/PerceivedComplexity:
 - `Layout/LineLength`
 - `Style/DoubleQuotes`
 - `Lint/EvalUsage`
+- `Lint/UnusedVariable`
 - `Metrics/AbcSize`
 - `Metrics/CyclomaticComplexity`
 - `Metrics/PerceivedComplexity`

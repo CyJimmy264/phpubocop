@@ -40,6 +40,11 @@ final class ConfigLoader
             'Lint/EvalUsage' => [
                 'Enabled' => true,
             ],
+            'Lint/UnusedVariable' => [
+                'Enabled' => true,
+                'IgnorePrefixedUnderscore' => true,
+                'IgnoreParameters' => true,
+            ],
             'Metrics/AbcSize' => [
                 'Enabled' => true,
                 'Max' => 17,
