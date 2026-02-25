@@ -95,6 +95,7 @@ final class ConfigLoader
             ],
             'Security/EvalAndDynamicInclude' => [
                 'Enabled' => true,
+                'AllowedDynamicIncludePatterns' => [],
             ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,

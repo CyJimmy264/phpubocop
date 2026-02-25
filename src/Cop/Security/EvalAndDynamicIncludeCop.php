@@ -21,9 +21,10 @@ final class EvalAndDynamicIncludeCop implements CopInterface
 
     public function inspect(SourceFile $file, array $config = []): array
     {
+        $allowedPatterns = $this->allowedDynamicIncludePatterns($config['AllowedDynamicIncludePatterns'] ?? []);
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file, $allowedPatterns): void {
             if ($node instanceof Expr\Eval_) {
                 $offenses[] = new Offense(
                     $this->name(),
@@ -42,6 +43,10 @@ final class EvalAndDynamicIncludeCop implements CopInterface
             }
 
             if ($this->isStaticIncludePath($node->expr)) {
+                return;
+            }
+
+            if ($this->isAllowedDynamicIncludePath($file, $node->expr, $allowedPatterns)) {
                 return;
             }
 
@@ -79,6 +84,47 @@ final class EvalAndDynamicIncludeCop implements CopInterface
 
         if ($expr instanceof Expr\BinaryOp\Concat) {
             return $this->isStaticIncludePath($expr->left) && $this->isStaticIncludePath($expr->right);
+        }
+
+        return false;
+    }
+
+    /** @return list<string> */
+    private function allowedDynamicIncludePatterns(array $raw): array
+    {
+        $patterns = [];
+        foreach ($raw as $pattern) {
+            if (!is_string($pattern) || $pattern === '') {
+                continue;
+            }
+            $patterns[] = $pattern;
+        }
+
+        return $patterns;
+    }
+
+    /** @param list<string> $patterns */
+    private function isAllowedDynamicIncludePath(SourceFile $file, Node $expr, array $patterns): bool
+    {
+        if ($patterns === []) {
+            return false;
+        }
+
+        $start = $expr->getStartFilePos();
+        $end = $expr->getEndFilePos();
+        if (!is_int($start) || !is_int($end) || $end < $start) {
+            return false;
+        }
+
+        $source = substr($file->content, $start, $end - $start + 1);
+        if (!is_string($source) || $source === '') {
+            return false;
+        }
+
+        foreach ($patterns as $pattern) {
+            if (@preg_match('/' . $pattern . '/u', $source) === 1) {
+                return true;
+            }
         }
 
         return false;

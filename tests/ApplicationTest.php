@@ -168,4 +168,31 @@ YAML
         self::assertSame(0, $exitCode);
         self::assertStringContainsString("'b' => 2,", $content);
     }
+
+    public function testLoadsConfigFromTargetDirectoryWhenConfigFlagIsNotProvided(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_target_cfg_' . uniqid('', true);
+        mkdir($dir, 0777, true);
+
+        $file = $dir . '/sample.php';
+        $config = $dir . '/.phpubocop.yml';
+
+        file_put_contents($file, "<?php\n\$a = \"hello\";\n");
+        file_put_contents($config, <<<'YAML'
+Style/DoubleQuotes:
+  Enabled: false
+YAML
+);
+
+        $app = new Application();
+
+        ob_start();
+        $exitCode = $app->run([
+            'phpubocop',
+            $dir,
+        ]);
+        ob_end_clean();
+
+        self::assertSame(0, $exitCode);
+    }
 }

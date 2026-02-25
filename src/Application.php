@@ -20,16 +20,18 @@ final class Application
         [$paths, $configPath, $format, $autocorrect, $autocorrectAll] = $this->parseArgs($argv);
 
         $configLoader = new ConfigLoader();
-        $config = $configLoader->load($configPath);
 
         $cops = CopRegistry::default();
-        if ($autocorrect) {
-            (new Autocorrector($cops))->run($paths, $config, $autocorrectAll);
-        }
-
         $runner = new Runner($cops);
         $offenses = [];
         foreach ($paths as $path) {
+            $resolvedConfigPath = $this->resolveConfigPathForTarget($path, $configPath);
+            $config = $configLoader->load($resolvedConfigPath);
+
+            if ($autocorrect) {
+                (new Autocorrector($cops))->run([$path], $config, $autocorrectAll);
+            }
+
             foreach ($runner->run($path, $config) as $offense) {
                 $offenses[] = $offense;
             }
@@ -49,7 +51,7 @@ final class Application
     private function parseArgs(array $argv): array
     {
         $paths = [];
-        $configPath = is_file('.phpubocop.yml') ? '.phpubocop.yml' : null;
+        $configPath = null;
         $format = 'text';
         $autocorrect = false;
         $autocorrectAll = false;
@@ -104,6 +106,29 @@ final class Application
         }
 
         return [$paths, $configPath, strtolower($format), $autocorrect, $autocorrectAll];
+    }
+
+    private function resolveConfigPathForTarget(string $targetPath, ?string $explicitConfigPath): ?string
+    {
+        if ($explicitConfigPath !== null) {
+            return $explicitConfigPath;
+        }
+
+        if (is_dir($targetPath)) {
+            $candidate = rtrim($targetPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.phpubocop.yml';
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        if (is_file($targetPath)) {
+            $candidate = dirname($targetPath) . DIRECTORY_SEPARATOR . '.phpubocop.yml';
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return is_file('.phpubocop.yml') ? '.phpubocop.yml' : null;
     }
 
     private function resolveFormatter(string $format): FormatterInterface
