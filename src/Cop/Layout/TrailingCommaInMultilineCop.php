@@ -110,6 +110,12 @@ final class TrailingCommaInMultilineCop implements CopInterface, Autocorrectable
             return;
         }
 
+        // Do not enforce trailing comma when closing delimiter is on the same
+        // line as the last item: avoids awkward forms like "],)->call()".
+        if ((int) $last->getEndLine() === $containerEndLine) {
+            return;
+        }
+
         $lastEnd = $last->getEndFilePos();
         $containerEnd = $container->getEndFilePos();
         if (!is_int($lastEnd) || !is_int($containerEnd) || $containerEnd <= $lastEnd) {

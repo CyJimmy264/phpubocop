@@ -78,4 +78,23 @@ PHP
 
         self::assertCount(0, $offenses);
     }
+
+    public function testSkipsWhenClosingParenIsOnSameLineAsLastArg(): void
+    {
+        $cop = new TrailingCommaInMultilineCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+$result = $query->where([
+    'a' => 1,
+    'b' => 2,
+])->fetch();
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+        $fixed = $cop->autocorrect($source);
+
+        self::assertCount(0, $offenses);
+        self::assertSame($source->content, $fixed);
+    }
 }
