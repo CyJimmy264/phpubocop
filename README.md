@@ -56,6 +56,9 @@ Lint/DuplicateArrayKey:
 Lint/EvalUsage:
   Enabled: true
 
+Lint/UnreachableCode:
+  Enabled: true
+
 Lint/UnusedVariable:
   Enabled: true
   IgnorePrefixedUnderscore: true
@@ -81,6 +84,7 @@ Metrics/PerceivedComplexity:
 - `Style/DoubleQuotes`
 - `Lint/DuplicateArrayKey`
 - `Lint/EvalUsage`
+- `Lint/UnreachableCode`
 - `Lint/UnusedVariable`
 - `Metrics/AbcSize`
 - `Metrics/CyclomaticComplexity`

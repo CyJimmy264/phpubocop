@@ -27,6 +27,8 @@ Layout/TrailingWhitespace:
   Enabled: false
 Lint/EvalUsage:
   Enabled: false
+Lint/UnreachableCode:
+  Enabled: false
 Lint/UnusedVariable:
   Enabled: false
 Metrics/AbcSize:
