@@ -39,15 +39,15 @@ final class UselessAssignmentCop implements CopInterface
     private function analyzeScope(Node $scope, string $path): array
     {
         $offenses = [];
-        /** @var array<string,array{line:int,depth:int}> $pendingAssignment */
+        /** @var array<string,array{line:int,context:string}> $pendingAssignment */
         $pendingAssignment = [];
 
         $markRead = function (string $name) use (&$pendingAssignment): void {
             unset($pendingAssignment[$name]);
         };
 
-        $markAssignment = function (string $name, int $line, int $depth) use (&$pendingAssignment, &$offenses, $path): void {
-            if (isset($pendingAssignment[$name]) && $pendingAssignment[$name]['depth'] === $depth) {
+        $markAssignment = function (string $name, int $line, string $context) use (&$pendingAssignment, &$offenses, $path): void {
+            if (isset($pendingAssignment[$name]) && $pendingAssignment[$name]['context'] === $context) {
                 $offenses[] = new Offense(
                     $this->name(),
                     $path,
@@ -57,27 +57,27 @@ final class UselessAssignmentCop implements CopInterface
                 );
             }
 
-            $pendingAssignment[$name] = ['line' => $line, 'depth' => $depth];
+            $pendingAssignment[$name] = ['line' => $line, 'context' => $context];
         };
 
-        $visit = function (Node $node, int $depth = 0) use (&$visit, $scope, $markRead, $markAssignment): void {
+        $visit = function (Node $node, string $context = '') use (&$visit, $scope, $markRead, $markAssignment): void {
             if ($node !== $scope && $this->isScope($node)) {
                 return;
             }
 
             if ($node instanceof Expr\Assign) {
-                $visit($node->expr, $depth);
-                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
+                $visit($node->expr, $context);
+                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $context, $markAssignment);
                 return;
             }
 
             if ($node instanceof Expr\AssignOp || $node instanceof Expr\AssignRef) {
                 $this->markReadVariable($node->var, $markRead);
-                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $depth, $markAssignment);
+                $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $context, $markAssignment);
                 if ($node instanceof Expr\AssignOp) {
-                    $visit($node->expr, $depth);
+                    $visit($node->expr, $context);
                 } else {
-                    $visit($node->expr, $depth);
+                    $visit($node->expr, $context);
                 }
                 return;
             }
@@ -87,27 +87,30 @@ final class UselessAssignmentCop implements CopInterface
                 return;
             }
 
-            $nextDepth = $depth + ($this->isControlFlowNode($node) ? 1 : 0);
+            $nextContext = $context;
+            if ($this->isControlFlowNode($node)) {
+                $nextContext = $context . '/' . (string) spl_object_id($node);
+            }
 
             foreach ($node->getSubNodeNames() as $subNodeName) {
                 $subNode = $node->{$subNodeName};
 
                 if ($subNode instanceof Node) {
-                    $visit($subNode, $nextDepth);
+                    $visit($subNode, $nextContext);
                     continue;
                 }
 
                 if (is_array($subNode)) {
                     foreach ($subNode as $child) {
                         if ($child instanceof Node) {
-                            $visit($child, $nextDepth);
+                            $visit($child, $nextContext);
                         }
                     }
                 }
             }
         };
 
-        $visit($scope, 0);
+        $visit($scope, '');
 
         return $offenses;
     }
@@ -169,11 +172,11 @@ final class UselessAssignmentCop implements CopInterface
         }
     }
 
-    /** @param callable(string,int,int): void $markAssignment */
-    private function markAssignedVariable(Node $target, int $line, int $depth, callable $markAssignment): void
+    /** @param callable(string,int,string): void $markAssignment */
+    private function markAssignedVariable(Node $target, int $line, string $context, callable $markAssignment): void
     {
         if ($target instanceof Expr\Variable && is_string($target->name)) {
-            $markAssignment($target->name, $line, $depth);
+            $markAssignment($target->name, $line, $context);
         }
     }
 }

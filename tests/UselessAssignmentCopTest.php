@@ -109,4 +109,31 @@ PHP
 
         self::assertCount(0, $offenses);
     }
+
+    public function testDoesNotReportWhenTryAndCatchAssignmentsAreMutuallyExclusive(): void
+    {
+        $cop = new UselessAssignmentCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+function demo(): array {
+    $savedCoupons = [];
+
+    try {
+        $saved = getCoupons();
+        if (is_array($saved)) {
+            $savedCoupons = array_keys($saved);
+        }
+    } catch (\Throwable $e) {
+        $savedCoupons = [];
+    }
+
+    return $savedCoupons;
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
 }
