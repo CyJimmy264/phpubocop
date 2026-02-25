@@ -62,6 +62,9 @@ Security/Unserialize:
 Security/Exec:
   Enabled: true
 
+Security/EvalAndDynamicInclude:
+  Enabled: true
+
 Lint/DuplicateArrayKey:
   Enabled: true
 
@@ -122,6 +125,7 @@ Metrics/ParameterLists:
 - `Style/BooleanLiteralComparison`
 - `Security/Unserialize`
 - `Security/Exec`
+- `Security/EvalAndDynamicInclude`
 - `Lint/DuplicateArrayKey`
 - `Lint/DuplicateMethod`
 - `Lint/EvalUsage`

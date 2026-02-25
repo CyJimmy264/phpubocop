@@ -90,6 +90,9 @@ final class ConfigLoader
             'Security/Exec' => [
                 'Enabled' => true,
             ],
+            'Security/EvalAndDynamicInclude' => [
+                'Enabled' => true,
+            ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],

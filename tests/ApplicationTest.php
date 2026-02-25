@@ -57,6 +57,8 @@ Security/Unserialize:
   Enabled: false
 Security/Exec:
   Enabled: false
+Security/EvalAndDynamicInclude:
+  Enabled: false
 YAML
 );
 

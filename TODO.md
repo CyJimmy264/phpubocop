@@ -21,14 +21,12 @@
 - Metrics/ParameterLists
 - Metrics/PerceivedComplexity
 - Security/Exec
+- Security/EvalAndDynamicInclude
 - Security/Unserialize
 
 ## План (следующие cop-ы)
 
 ## Ранее предложено (добавить в roadmap)
-
-- Security/EvalAndDynamicInclude
-Расширить текущий `EvalUsage` до `include/require` с динамическими путями.
 
 - Style/StrictComparison
 Предупреждать `==/!=` и предлагать `===/!==` там, где безопасно.

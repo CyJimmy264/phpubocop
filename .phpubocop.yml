@@ -22,6 +22,9 @@ Security/Unserialize:
 Security/Exec:
   Enabled: true
 
+Security/EvalAndDynamicInclude:
+  Enabled: true
+
 Lint/DuplicateArrayKey:
   Enabled: true
 

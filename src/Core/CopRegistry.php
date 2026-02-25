@@ -24,6 +24,7 @@ use PHPuboCop\Cop\Style\DoubleQuotesCop;
 use PHPuboCop\Cop\Style\EmptyCatchCop;
 use PHPuboCop\Cop\Security\UnserializeCop;
 use PHPuboCop\Cop\Security\ExecCop;
+use PHPuboCop\Cop\Security\EvalAndDynamicIncludeCop;
 
 final class CopRegistry
 {
@@ -50,6 +51,7 @@ final class CopRegistry
             new ParameterListsCop(),
             new UnserializeCop(),
             new ExecCop(),
+            new EvalAndDynamicIncludeCop(),
         ];
     }
 }
