@@ -39,7 +39,7 @@
 - [x] Style/DoubleQuotes
 Менять `\"text\"` на `'text'` только в безопасных случаях без интерполяции/escape-ловушек.
 
-- [ ] Style/StrictComparison
+- [x] Style/StrictComparison
 Ограниченный autocorrect `== -> ===`, `!= -> !==` только для безопасных сценариев.
 
 - [ ] Style/BooleanLiteralComparison
