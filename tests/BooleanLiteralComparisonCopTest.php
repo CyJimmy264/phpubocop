@@ -31,6 +31,43 @@ PHP
         self::assertSame('Style/BooleanLiteralComparison', $offenses[0]->copName);
     }
 
+    public function testDoesNotReportFalseChecksForKnownFalseableFunctionResultVariable(): void
+    {
+        $cop = new BooleanLiteralComparisonCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+$deliveryTimesJson = json_encode($data, JSON_UNESCAPED_UNICODE);
+if ($deliveryTimesJson === false) {
+    $deliveryTimesJson = '{}';
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
+
+    public function testDoesNotReportDirectFalseChecksForKnownFalseableFunctions(): void
+    {
+        $cop = new BooleanLiteralComparisonCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+if (strpos($s, 'x') === false) {
+    return;
+}
+
+if (preg_match($re, $s) === false) {
+    return;
+}
+PHP
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
+
     public function testDoesNotReportNonBooleanComparisons(): void
     {
         $cop = new BooleanLiteralComparisonCop();
