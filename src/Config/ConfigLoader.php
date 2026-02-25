@@ -40,6 +40,9 @@ final class ConfigLoader
             'Lint/DuplicateArrayKey' => [
                 'Enabled' => true,
             ],
+            'Lint/DuplicateMethod' => [
+                'Enabled' => true,
+            ],
             'Lint/EvalUsage' => [
                 'Enabled' => true,
             ],

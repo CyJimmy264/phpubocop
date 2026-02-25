@@ -65,6 +65,9 @@ Security/Exec:
 Lint/DuplicateArrayKey:
   Enabled: true
 
+Lint/DuplicateMethod:
+  Enabled: true
+
 Lint/EvalUsage:
   Enabled: true
 
@@ -120,6 +123,7 @@ Metrics/ParameterLists:
 - `Security/Unserialize`
 - `Security/Exec`
 - `Lint/DuplicateArrayKey`
+- `Lint/DuplicateMethod`
 - `Lint/EvalUsage`
 - `Lint/SuppressedError`
 - `Lint/ShadowingVariable`

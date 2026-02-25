@@ -5,6 +5,7 @@
 - Layout/TrailingWhitespace
 - Layout/LineLength
 - Lint/DuplicateArrayKey
+- Lint/DuplicateMethod
 - Lint/EvalUsage
 - Lint/SuppressedError
 - Lint/ShadowingVariable
@@ -23,9 +24,6 @@
 - Security/Unserialize
 
 ## План (следующие cop-ы)
-
-- Lint/DuplicateMethod (если есть)
-Полезно для раннего обнаружения accidental copy-paste.
 
 ## Ранее предложено (добавить в roadmap)
 

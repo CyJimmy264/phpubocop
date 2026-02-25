@@ -7,6 +7,7 @@ namespace PHPuboCop\Core;
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
 use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
+use PHPuboCop\Cop\Lint\DuplicateMethodCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Lint\SuppressedErrorCop;
 use PHPuboCop\Cop\Lint\ShadowingVariableCop;
@@ -32,6 +33,7 @@ final class CopRegistry
             new TrailingWhitespaceCop(),
             new LineLengthCop(),
             new DuplicateArrayKeyCop(),
+            new DuplicateMethodCop(),
             new EvalUsageCop(),
             new SuppressedErrorCop(),
             new ShadowingVariableCop(),
