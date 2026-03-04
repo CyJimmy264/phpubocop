@@ -40,6 +40,11 @@ final class ConfigLoader
             'Layout/TrailingCommaInMultiline' => [
                 'Enabled' => true,
             ],
+            'Layout/IndentationStyle' => [
+                'Enabled' => true,
+                'Style' => 'spaces',
+                'TabWidth' => 4,
+            ],
             'Lint/DuplicateArrayKey' => [
                 'Enabled' => true,
             ],

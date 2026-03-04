@@ -54,6 +54,11 @@ Layout/TrailingCommaInMultiline:
 Layout/TrailingWhitespace:
   Enabled: true
 
+Layout/IndentationStyle:
+  Enabled: true
+  Style: spaces
+  TabWidth: 4
+
 Style/DoubleQuotes:
   Enabled: true
 
@@ -131,6 +136,7 @@ Metrics/ParameterLists:
 - `Layout/TrailingWhitespace`
 - `Layout/LineLength`
 - `Layout/TrailingCommaInMultiline`
+- `Layout/IndentationStyle`
 - `Style/DoubleQuotes`
 - `Style/EmptyCatch`
 - `Style/BooleanLiteralComparison`

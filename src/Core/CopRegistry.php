@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PHPuboCop\Core;
 
 use PHPuboCop\Cop\Layout\LineLengthCop;
+use PHPuboCop\Cop\Layout\IndentationStyleCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
 use PHPuboCop\Cop\Layout\TrailingCommaInMultilineCop;
 use PHPuboCop\Cop\Lint\DuplicateArrayKeyCop;
@@ -36,6 +37,7 @@ final class CopRegistry
             new TrailingWhitespaceCop(),
             new TrailingCommaInMultilineCop(),
             new LineLengthCop(),
+            new IndentationStyleCop(),
             new DuplicateArrayKeyCop(),
             new DuplicateMethodCop(),
             new EvalUsageCop(),
