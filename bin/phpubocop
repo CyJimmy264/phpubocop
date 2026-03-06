@@ -5,7 +5,25 @@ declare(strict_types=1);
 
 use PHPuboCop\Application;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoloadCandidates = [
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+];
+
+$autoloadPath = null;
+foreach ($autoloadCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $autoloadPath = $candidate;
+        break;
+    }
+}
+
+if ($autoloadPath === null) {
+    fwrite(STDERR, "Unable to locate Composer autoload.php\n");
+    exit(1);
+}
+
+require_once $autoloadPath;
 
 // Large legacy codebases can require substantial memory for AST parsing.
 $memoryLimit = getenv('PHPUBOCOP_MEMORY_LIMIT') ?: '8G';
