@@ -115,6 +115,7 @@ final class UnusedVariableCop implements CopInterface
             }
 
             if ($node instanceof Expr\Assign) {
+                $this->collectReadNamesFromAssignmentTarget($node->var, $markRead);
                 $this->collectAssignedNames($node->var, (int) $node->getStartLine(), $markAssigned);
                 $visit($node->expr);
                 return;
@@ -260,6 +261,20 @@ final class UnusedVariableCop implements CopInterface
                 $this->collectAssignedNames($item->value, (int) $item->getStartLine(), $markAssigned);
             }
         }
+    }
+
+    /** @param callable(string): void $markRead */
+    private function collectReadNamesFromAssignmentTarget(Node $target, callable $markRead): void
+    {
+        if ($target instanceof Expr\Variable && is_string($target->name)) {
+            return;
+        }
+
+        if ($target instanceof Expr\List_ || $target instanceof Expr\Array_) {
+            return;
+        }
+
+        $this->collectReadNames($target, $markRead);
     }
 
     /** @param callable(string): void $markRead */

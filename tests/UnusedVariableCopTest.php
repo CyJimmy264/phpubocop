@@ -151,4 +151,25 @@ PHP,
         self::assertCount(1, $offenses);
         self::assertStringContainsString('$tmp', $offenses[0]->message);
     }
+
+    public function testTreatsVariableAsUsedWhenUsedInArrayIndexAssignment(): void
+    {
+        $cop = new UnusedVariableCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+function demo(array $rows) {
+    $result = [];
+    foreach ($rows as $item) {
+        $id = (int)($item['id'] ?? 0);
+        $result[$id] = $item;
+    }
+    return $result;
+}
+PHP,
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
 }
