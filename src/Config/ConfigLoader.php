@@ -27,6 +27,7 @@ final class ConfigLoader
         return [
             'AllCops' => [
                 'EnabledByDefault' => true,
+                'UseGitFileList' => true,
                 'Exclude' => ['vendor/**'],
                 'Include' => ['**/*.php'],
             ],

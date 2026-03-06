@@ -21,6 +21,7 @@ final class FileFinder
      * @return array{
      *   files:list<string>,
      *   stats:array{
+     *     source:string,
      *     php_files_seen:int,
      *     included:int,
      *     excluded_by_config:int,
@@ -31,6 +32,7 @@ final class FileFinder
     public function findWithStats(string $path, array $config): array
     {
         $stats = [
+            'source' => 'filesystem',
             'php_files_seen' => 0,
             'included' => 0,
             'excluded_by_config' => 0,
@@ -49,8 +51,16 @@ final class FileFinder
             ];
         }
 
-        $files = [];
         $exclude = $config['AllCops']['Exclude'] ?? [];
+        $useGitFileList = (bool) ($config['AllCops']['UseGitFileList'] ?? true);
+        if ($useGitFileList) {
+            $gitResult = $this->findWithGit($path, $exclude, $stats);
+            if ($gitResult !== null) {
+                return $gitResult;
+            }
+        }
+
+        $files = [];
         $gitignoreRules = $this->loadGitignoreRules($path);
         $root = rtrim(str_replace('\\', '/', realpath($path) ?: $path), '/');
 
@@ -111,6 +121,60 @@ final class FileFinder
         }
 
         sort($files);
+        return [
+            'files' => $files,
+            'stats' => $stats,
+        ];
+    }
+
+    /**
+     * @param array<int,string> $exclude
+     * @param array{source:string,php_files_seen:int,included:int,excluded_by_config:int,ignored_by_gitignore:int} $stats
+     * @return array{files:list<string>,stats:array{source:string,php_files_seen:int,included:int,excluded_by_config:int,ignored_by_gitignore:int}}|null
+     */
+    private function findWithGit(string $path, array $exclude, array $stats): ?array
+    {
+        $realPath = realpath($path);
+        if ($realPath === false) {
+            return null;
+        }
+
+        $cmd = sprintf(
+            'git -C %s ls-files --cached --others --exclude-standard -z -- . 2>/dev/null',
+            escapeshellarg($realPath)
+        );
+        $output = shell_exec($cmd);
+        if (!is_string($output) || $output === '') {
+            return null;
+        }
+
+        $files = [];
+        $entries = explode("\0", $output);
+        foreach ($entries as $entry) {
+            if ($entry === '') {
+                continue;
+            }
+
+            if (!str_ends_with($entry, '.php')) {
+                continue;
+            }
+
+            $stats['php_files_seen']++;
+            $fullPath = $realPath . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $entry);
+            if ($this->isExcluded($fullPath, $exclude)) {
+                $stats['excluded_by_config']++;
+                continue;
+            }
+
+            if (is_file($fullPath)) {
+                $files[] = $fullPath;
+                $stats['included']++;
+            }
+        }
+
+        $stats['source'] = 'git';
+        sort($files);
+
         return [
             'files' => $files,
             'stats' => $stats,

@@ -190,10 +190,12 @@ TXT;
 
     private function printVerboseDiscovery(array $stats): void
     {
+        $source = (string) ($stats['source'] ?? 'filesystem');
         fwrite(
             STDERR,
             sprintf(
-                "[phpubocop] files: php_seen=%d, included=%d, excluded_by_config=%d, ignored_by_gitignore=%d\n",
+                "[phpubocop] files(%s): php_seen=%d, included=%d, excluded_by_config=%d, ignored_by_gitignore=%d\n",
+                $source,
                 (int) ($stats['php_files_seen'] ?? 0),
                 (int) ($stats['included'] ?? 0),
                 (int) ($stats['excluded_by_config'] ?? 0),

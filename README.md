@@ -43,6 +43,7 @@ Create `.phpubocop.yml`:
 ```yaml
 AllCops:
   EnabledByDefault: true
+  UseGitFileList: true
   Exclude:
     - vendor/**
 
