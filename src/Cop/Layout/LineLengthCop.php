@@ -18,23 +18,31 @@ final class LineLengthCop implements CopInterface
     public function inspect(SourceFile $file, array $config = []): array
     {
         $max = (int) ($config['Max'] ?? 120);
-        $offenses = [];
+        return $this->collectLineLengthOffenses($file, $max);
+    }
 
+    /** @return list<Offense> */
+    private function collectLineLengthOffenses(SourceFile $file, int $max): array
+    {
+        $offenses = [];
         foreach ($file->lines() as $index => $line) {
             $length = mb_strlen($line);
-            if ($length <= $max) {
-                continue;
+            if ($length > $max) {
+                $offenses[] = $this->newOffense($file, $index + 1, $length, $max);
             }
-
-            $offenses[] = new Offense(
-                $this->name(),
-                $file->path,
-                $index + 1,
-                $max + 1,
-                sprintf('Line is too long. [%d/%d]', $length, $max),
-            );
         }
 
         return $offenses;
+    }
+
+    private function newOffense(SourceFile $file, int $line, int $length, int $max): Offense
+    {
+        return new Offense(
+            $this->name(),
+            $file->path,
+            $line,
+            $max + 1,
+            sprintf('Line is too long. [%d/%d]', $length, $max),
+        );
     }
 }

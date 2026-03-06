@@ -56,4 +56,20 @@ PHP,
 
         self::assertCount(0, $offenses);
     }
+
+    public function testDoesNotReportConstructorByDefault(): void
+    {
+        $cop = new ParameterListsCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+class Demo {
+    public function __construct($a, $b, $c, $d, $e, $f) {}
+}
+PHP,
+);
+
+        $offenses = $cop->inspect($source, ['Max' => 5]);
+
+        self::assertCount(0, $offenses);
+    }
 }

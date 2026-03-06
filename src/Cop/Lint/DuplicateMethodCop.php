@@ -41,33 +41,12 @@ final class DuplicateMethodCop implements CopInterface
         $seen = [];
 
         foreach ($nodes as $node) {
-            if (!$node instanceof Node) {
+            if ($this->handleNamespaceNode($node, $path, $offenses)) {
                 continue;
             }
-
-            if ($node instanceof Stmt\Namespace_) {
-                $nextNamespace = $node->name?->toString() ?? '';
-                $this->inspectDuplicateFunctions($node->stmts, $nextNamespace, $path, $offenses);
+            if ($this->handleFunctionNode($node, $namespace, $path, $seen, $offenses)) {
                 continue;
             }
-
-            if (!$node instanceof Stmt\Function_) {
-                continue;
-            }
-
-            $key = strtolower(($namespace !== '' ? $namespace . '\\' : '') . $node->name->toString());
-            if (isset($seen[$key])) {
-                $offenses[] = new Offense(
-                    $this->name(),
-                    $path,
-                    (int) $node->getStartLine(),
-                    1,
-                    sprintf('Duplicate function declaration: %s().', $node->name->toString()),
-                );
-                continue;
-            }
-
-            $seen[$key] = true;
         }
     }
 
@@ -91,5 +70,59 @@ final class DuplicateMethodCop implements CopInterface
 
             $seen[$name] = true;
         }
+    }
+
+    /** @param list<Offense> $offenses */
+    private function handleNamespaceNode(Node $node, string $path, array &$offenses): bool
+    {
+        if (!$node instanceof Stmt\Namespace_) {
+            return false;
+        }
+
+        $nextNamespace = $node->name?->toString() ?? '';
+        $this->inspectDuplicateFunctions($node->stmts, $nextNamespace, $path, $offenses);
+        return true;
+    }
+
+    private function handleFunctionNode(
+        Node $node,
+        string $namespace,
+        string $path,
+        array &$seen,
+        array &$offenses,
+    ): bool {
+        if (!$node instanceof Stmt\Function_) {
+            return false;
+        }
+        $name = $node->name->toString();
+        $key = $this->functionKey($namespace, $name);
+        if ($this->isDuplicateFunctionKey($seen, $key)) {
+            $offenses[] = $this->duplicateFunctionOffense($path, (int) $node->getStartLine(), $name);
+            return true;
+        }
+        $seen[$key] = true;
+        return true;
+    }
+
+    private function functionKey(string $namespace, string $name): string
+    {
+        return strtolower(($namespace !== '' ? $namespace . '\\' : '') . $name);
+    }
+
+    /** @param array<string,bool> $seen */
+    private function isDuplicateFunctionKey(array $seen, string $key): bool
+    {
+        return isset($seen[$key]);
+    }
+
+    private function duplicateFunctionOffense(string $path, int $line, string $name): Offense
+    {
+        return new Offense(
+            $this->name(),
+            $path,
+            $line,
+            1,
+            sprintf('Duplicate function declaration: %s().', $name),
+        );
     }
 }

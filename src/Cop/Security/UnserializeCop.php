@@ -10,6 +10,7 @@ use PHPuboCop\Core\SourceFile;
 use PHPuboCop\Util\AstWalker;
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\ArrayItem;
 use PhpParser\Node\Name;
 use PhpParser\Node\Scalar\String_;
 
@@ -53,28 +54,44 @@ final class UnserializeCop implements CopInterface
 
     private function hasStrictAllowedClasses(Expr\FuncCall $call): bool
     {
-        if (count($call->args) < 2) {
-            return false;
-        }
-
-        $options = $call->args[1]->value;
-        if (!$options instanceof Expr\Array_) {
+        $options = $this->optionsArrayArg($call);
+        if ($options === null) {
             return false;
         }
 
         foreach ($options->items as $item) {
-            if ($item === null || !$item->key instanceof String_) {
+            if (!$this->isAllowedClassesKey($item)) {
                 continue;
             }
 
-            if (strtolower($item->key->value) !== 'allowed_classes') {
-                continue;
-            }
-
-            return $item->value instanceof Expr\ConstFetch
-                && strtolower($item->value->name->toString()) === 'false';
+            return $this->isFalseConst($item->value);
         }
 
         return false;
+    }
+
+    private function optionsArrayArg(Expr\FuncCall $call): ?Expr\Array_
+    {
+        if (count($call->args) < 2) {
+            return null;
+        }
+
+        $options = $call->args[1]->value;
+        return $options instanceof Expr\Array_ ? $options : null;
+    }
+
+    private function isAllowedClassesKey(?Expr\ArrayItem $item): bool
+    {
+        if ($item === null || !$item->key instanceof String_) {
+            return false;
+        }
+
+        return strtolower($item->key->value) === 'allowed_classes';
+    }
+
+    private function isFalseConst(Node $value): bool
+    {
+        return $value instanceof Expr\ConstFetch
+            && strtolower($value->name->toString()) === 'false';
     }
 }

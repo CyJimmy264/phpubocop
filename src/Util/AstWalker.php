@@ -17,18 +17,21 @@ final class AstWalker
             }
 
             $callback($node);
+            self::walkSubNodes($node, $callback);
+        }
+    }
 
-            foreach ($node->getSubNodeNames() as $subNodeName) {
-                $subNode = $node->{$subNodeName};
-
-                if ($subNode instanceof Node) {
-                    self::walk([$subNode], $callback);
-                    continue;
-                }
-
-                if (is_array($subNode)) {
-                    self::walk($subNode, $callback);
-                }
+    /** @param callable(Node): void $callback */
+    private static function walkSubNodes(Node $node, callable $callback): void
+    {
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $subNode = $node->{$subNodeName};
+            if ($subNode instanceof Node) {
+                self::walk([$subNode], $callback);
+                continue;
+            }
+            if (is_array($subNode)) {
+                self::walk($subNode, $callback);
             }
         }
     }

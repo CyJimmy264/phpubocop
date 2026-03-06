@@ -35,34 +35,31 @@ final class ParameterListsCop implements CopInterface
     private function collectOffenses(Node $node, SourceFile $file, int $max, array &$offenses): void
     {
         if ($this->isMeasuredScope($node)) {
-            $count = $this->parameterCount($node);
-            if ($count > $max) {
-                $offenses[] = new Offense(
-                    $this->name(),
-                    $file->path,
-                    (int) $node->getStartLine(),
-                    1,
-                    sprintf('Method has too many parameters. [%d/%d]', $count, $max),
-                );
-            }
+            $this->appendOffenseForScopeIfNeeded($node, $file, $max, $offenses);
         }
 
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $subNode = $node->{$subNodeName};
-
-            if ($subNode instanceof Node) {
-                $this->collectOffenses($subNode, $file, $max, $offenses);
-                continue;
-            }
-
-            if (is_array($subNode)) {
-                foreach ($subNode as $child) {
-                    if ($child instanceof Node) {
-                        $this->collectOffenses($child, $file, $max, $offenses);
-                    }
-                }
-            }
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->collectOffenses($child, $file, $max, $offenses);
         }
+    }
+
+    /** @param list<Offense> $offenses */
+    private function appendOffenseForScopeIfNeeded(
+        FunctionLike $scope,
+        SourceFile $file,
+        int $max,
+        array &$offenses,
+    ): void {
+        if ($this->isExcludedMethod($scope)) {
+            return;
+        }
+
+        $count = $this->parameterCount($scope);
+        if ($count <= $max) {
+            return;
+        }
+
+        $offenses[] = $this->newOffense($file, $scope, $count, $max);
     }
 
     private function isMeasuredScope(Node $node): bool
@@ -76,5 +73,47 @@ final class ParameterListsCop implements CopInterface
     private function parameterCount(FunctionLike $node): int
     {
         return count($node->getParams());
+    }
+
+    private function isExcludedMethod(FunctionLike $scope): bool
+    {
+        if (!$scope instanceof Stmt\ClassMethod) {
+            return false;
+        }
+
+        return strtolower($scope->name->toString()) === '__construct';
+    }
+
+    private function newOffense(SourceFile $file, FunctionLike $scope, int $count, int $max): Offense
+    {
+        return new Offense(
+            $this->name(),
+            $file->path,
+            (int) $scope->getStartLine(),
+            1,
+            sprintf('Method has too many parameters. [%d/%d]', $count, $max),
+        );
+    }
+
+    /** @return list<Node> */
+    private function childNodesOf(Node $node): array
+    {
+        $children = [];
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $subNode = $node->{$subNodeName};
+            if ($subNode instanceof Node) {
+                $children[] = $subNode;
+                continue;
+            }
+            if (is_array($subNode)) {
+                foreach ($subNode as $child) {
+                    if ($child instanceof Node) {
+                        $children[] = $child;
+                    }
+                }
+            }
+        }
+
+        return $children;
     }
 }
