@@ -30,34 +30,12 @@ final class Runner
     /** @return list<Offense> */
     public function run(string $path, array $config): array
     {
-        $offenses = [];
         $discovery = $this->fileFinder->findWithStats($path, $config);
         $files = $discovery['files'];
         $this->lastInspectedFiles = $files;
         $this->lastFileStats = $discovery['stats'];
 
-        foreach ($files as $filePath) {
-            $content = (string) file_get_contents($filePath);
-            $sourceFile = new SourceFile($filePath, $content);
-
-            foreach ($this->cops as $cop) {
-                $copConfig = $config[$cop->name()] ?? [];
-                if (!$this->isCopEnabled($cop->name(), $config, $copConfig)) {
-                    continue;
-                }
-
-                foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
-                    $offenses[] = $offense;
-                }
-            }
-        }
-
-        usort(
-            $offenses,
-            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName],
-        );
-
-        return $offenses;
+        return $this->sortedOffenses($this->collectOffensesForFiles($files, $config));
     }
 
     public function lastFileStats(): array
@@ -78,5 +56,51 @@ final class Runner
         }
 
         return (bool) ($config['AllCops']['EnabledByDefault'] ?? true);
+    }
+
+    /** @param list<string> $files @return list<Offense> */
+    private function collectOffensesForFiles(array $files, array $config): array
+    {
+        $offenses = [];
+        foreach ($files as $filePath) {
+            foreach ($this->inspectFile($filePath, $config) as $offense) {
+                $offenses[] = $offense;
+            }
+        }
+
+        return $offenses;
+    }
+
+    /** @return list<Offense> */
+    private function inspectFile(string $filePath, array $config): array
+    {
+        $sourceFile = new SourceFile($filePath, (string) file_get_contents($filePath));
+        $offenses = [];
+        foreach ($this->cops as $cop) {
+            $copConfig = $config[$cop->name()] ?? [];
+            if (!$this->isCopEnabled($cop->name(), $config, $copConfig)) {
+                continue;
+            }
+
+            foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
+                $offenses[] = $offense;
+            }
+        }
+
+        return $offenses;
+    }
+
+    /** @param list<Offense> $offenses @return list<Offense> */
+    private function sortedOffenses(array $offenses): array
+    {
+        usort(
+            $offenses,
+            static fn (Offense $a, Offense $b): int =>
+                [$a->file, $a->line, $a->column, $a->copName]
+                <=>
+                [$b->file, $b->line, $b->column, $b->copName],
+        );
+
+        return $offenses;
     }
 }

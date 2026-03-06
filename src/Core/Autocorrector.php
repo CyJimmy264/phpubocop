@@ -26,33 +26,48 @@ final class Autocorrector
 
         foreach ($files as $filePath) {
             $content = (string) file_get_contents($filePath);
-            $original = $content;
-
-            foreach ($this->cops as $cop) {
-                if (!$cop instanceof AutocorrectableCopInterface) {
-                    continue;
-                }
-
-                if (!$includeUnsafe && !$cop instanceof SafeAutocorrectableCopInterface) {
-                    continue;
-                }
-
-                $copConfig = $config[$cop->name()] ?? [];
-                if (!$this->isCopEnabled($config, $copConfig)) {
-                    continue;
-                }
-
-                $source = new SourceFile($filePath, $content);
-                $content = $cop->autocorrect($source, $copConfig);
+            $fixed = $this->autocorrectFileContent($filePath, $content, $config, $includeUnsafe);
+            if ($fixed === $content) {
+                continue;
             }
 
-            if ($content !== $original) {
-                file_put_contents($filePath, $content);
-                $changed++;
-            }
+            file_put_contents($filePath, $fixed);
+            $changed++;
         }
 
         return $changed;
+    }
+
+    private function autocorrectFileContent(
+        string $filePath,
+        string $content,
+        array $config,
+        bool $includeUnsafe,
+    ): string {
+        foreach ($this->cops as $cop) {
+            if (!$this->shouldApplyAutocorrectCop($cop, $config, $includeUnsafe)) {
+                continue;
+            }
+
+            $copConfig = $config[$cop->name()] ?? [];
+            $source = new SourceFile($filePath, $content);
+            $content = $cop->autocorrect($source, $copConfig);
+        }
+
+        return $content;
+    }
+
+    private function shouldApplyAutocorrectCop(CopInterface $cop, array $config, bool $includeUnsafe): bool
+    {
+        if (!$cop instanceof AutocorrectableCopInterface) {
+            return false;
+        }
+        if (!$includeUnsafe && !$cop instanceof SafeAutocorrectableCopInterface) {
+            return false;
+        }
+
+        $copConfig = $config[$cop->name()] ?? [];
+        return $this->isCopEnabled($config, $copConfig);
     }
 
     /** @param list<string> $paths @return list<string> */
