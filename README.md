@@ -24,6 +24,7 @@ vendor/bin/phpubocop src --format=json
 vendor/bin/phpubocop src --config=.phpubocop.yml
 vendor/bin/phpubocop src --autocorrect
 vendor/bin/phpubocop src --autocorrect-all
+vendor/bin/phpubocop src --verbose
 ```
 
 Exit code:
@@ -33,6 +34,7 @@ Exit code:
 - Files ignored by the project's `.gitignore` are skipped automatically.
 - `--autocorrect` applies only cops explicitly marked as safe for autocorrection.
 - `--autocorrect-all` applies all autocorrectable cops, including unsafe ones.
+- `--verbose` prints selected config source and file discovery stats to `STDERR`.
 
 ## Configuration
 

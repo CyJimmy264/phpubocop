@@ -12,8 +12,39 @@ final class FileFinder
     /** @return list<string> */
     public function find(string $path, array $config): array
     {
+        return $this->findWithStats($path, $config)['files'];
+    }
+
+    /**
+     * @return array{
+     *   files:list<string>,
+     *   stats:array{
+     *     php_files_seen:int,
+     *     included:int,
+     *     excluded_by_config:int,
+     *     ignored_by_gitignore:int
+     *   }
+     * }
+     */
+    public function findWithStats(string $path, array $config): array
+    {
+        $stats = [
+            'php_files_seen' => 0,
+            'included' => 0,
+            'excluded_by_config' => 0,
+            'ignored_by_gitignore' => 0,
+        ];
+
         if (is_file($path)) {
-            return [$path];
+            if (str_ends_with($path, '.php')) {
+                $stats['php_files_seen'] = 1;
+                $stats['included'] = 1;
+            }
+
+            return [
+                'files' => [$path],
+                'stats' => $stats,
+            ];
         }
 
         $files = [];
@@ -34,20 +65,27 @@ final class FileFinder
             if (!str_ends_with($filePath, '.php')) {
                 continue;
             }
+            $stats['php_files_seen']++;
 
             if ($this->isExcluded($filePath, $exclude)) {
+                $stats['excluded_by_config']++;
                 continue;
             }
 
             if ($this->isIgnoredByGitignore($filePath, $root, $gitignoreRules)) {
+                $stats['ignored_by_gitignore']++;
                 continue;
             }
 
             $files[] = $filePath;
+            $stats['included']++;
         }
 
         sort($files);
-        return $files;
+        return [
+            'files' => $files,
+            'stats' => $stats,
+        ];
     }
 
     private function isExcluded(string $path, array $excludePatterns): bool

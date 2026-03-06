@@ -34,4 +34,27 @@ final class FileFinderTest extends TestCase
         self::assertNotContains(str_replace('\\', '/', $root . '/ignored.php'), $normalized);
         self::assertNotContains(str_replace('\\', '/', $root . '/sub/skip.php'), $normalized);
     }
+
+    public function testReturnsDiscoveryStats(): void
+    {
+        $root = sys_get_temp_dir() . '/phpubocop_finder_stats_' . uniqid('', true);
+        mkdir($root . '/vendor', 0777, true);
+
+        file_put_contents($root . '/.gitignore', "ignored.php\n");
+        file_put_contents($root . '/ignored.php', "<?php\n");
+        file_put_contents($root . '/vendor/excluded.php', "<?php\n");
+        file_put_contents($root . '/ok.php', "<?php\n");
+
+        $finder = new FileFinder();
+        $result = $finder->findWithStats($root, [
+            'AllCops' => [
+                'Exclude' => ['vendor/**'],
+            ],
+        ]);
+
+        self::assertSame(3, $result['stats']['php_files_seen']);
+        self::assertSame(1, $result['stats']['included']);
+        self::assertSame(1, $result['stats']['excluded_by_config']);
+        self::assertSame(1, $result['stats']['ignored_by_gitignore']);
+    }
 }
