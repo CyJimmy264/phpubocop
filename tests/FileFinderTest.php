@@ -52,9 +52,32 @@ final class FileFinderTest extends TestCase
             ],
         ]);
 
-        self::assertSame(3, $result['stats']['php_files_seen']);
+        self::assertSame(2, $result['stats']['php_files_seen']);
         self::assertSame(1, $result['stats']['included']);
-        self::assertSame(1, $result['stats']['excluded_by_config']);
+        self::assertSame(0, $result['stats']['excluded_by_config']);
         self::assertSame(1, $result['stats']['ignored_by_gitignore']);
+    }
+
+    public function testPrunesSimpleGitignoreDirectoryWithoutNegation(): void
+    {
+        $root = sys_get_temp_dir() . '/phpubocop_finder_prune_' . uniqid('', true);
+        mkdir($root . '/ignored/deep', 0777, true);
+
+        file_put_contents($root . '/.gitignore', "ignored/\n");
+        file_put_contents($root . '/ignored/deep/a.php', "<?php\n");
+        file_put_contents($root . '/ok.php', "<?php\n");
+
+        $finder = new FileFinder();
+        $result = $finder->findWithStats($root, [
+            'AllCops' => [
+                'Exclude' => [],
+            ],
+        ]);
+
+        $normalized = array_map(static fn (string $f): string => str_replace('\\', '/', $f), $result['files']);
+
+        self::assertContains(str_replace('\\', '/', $root . '/ok.php'), $normalized);
+        self::assertNotContains(str_replace('\\', '/', $root . '/ignored/deep/a.php'), $normalized);
+        self::assertSame(1, $result['stats']['php_files_seen']);
     }
 }

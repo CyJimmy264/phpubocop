@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace PHPuboCop\Util;
 
+use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SplFileInfo;
 
 final class FileFinder
 {
@@ -52,8 +54,35 @@ final class FileFinder
         $gitignoreRules = $this->loadGitignoreRules($path);
         $root = rtrim(str_replace('\\', '/', realpath($path) ?: $path), '/');
 
+        $directoryIterator = new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS);
+        $filtered = new RecursiveCallbackFilterIterator(
+            $directoryIterator,
+            function (SplFileInfo $current) use ($exclude, $gitignoreRules, $root): bool {
+                if (!$current->isDir()) {
+                    return true;
+                }
+
+                $fullPath = str_replace('\\', '/', $current->getPathname());
+                $relativeDir = $this->relativePathFromRoot($fullPath, $root);
+                if ($relativeDir === '') {
+                    return true;
+                }
+
+                if ($this->shouldPruneByExclude($relativeDir, $exclude)) {
+                    return false;
+                }
+
+                if ($this->shouldPruneByGitignore($relativeDir, $gitignoreRules)) {
+                    return false;
+                }
+
+                return true;
+            }
+        );
+
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS)
+            $filtered,
+            RecursiveIteratorIterator::LEAVES_ONLY
         );
 
         foreach ($iterator as $fileInfo) {
@@ -95,6 +124,125 @@ final class FileFinder
         foreach ($excludePatterns as $pattern) {
             $pattern = str_replace('**', '*', (string) $pattern);
             if (fnmatch($pattern, $normalized) || fnmatch('*/' . ltrim($pattern, '/'), $normalized)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function relativePathFromRoot(string $normalizedPath, string $root): string
+    {
+        if (!str_starts_with($normalizedPath, $root)) {
+            return ltrim($normalizedPath, '/');
+        }
+
+        return ltrim(substr($normalizedPath, strlen($root)), '/');
+    }
+
+    private function shouldPruneByExclude(string $relativeDir, array $excludePatterns): bool
+    {
+        foreach ($excludePatterns as $pattern) {
+            $normalized = ltrim(str_replace('\\', '/', (string) $pattern), '/');
+            if ($normalized === '') {
+                continue;
+            }
+
+            // Safe prune only for explicit directory-style excludes.
+            $base = null;
+            if (str_ends_with($normalized, '/**')) {
+                $base = rtrim(substr($normalized, 0, -3), '/');
+            } elseif (str_ends_with($normalized, '/')) {
+                $base = rtrim($normalized, '/');
+            }
+
+            if ($base === null || $base === '') {
+                continue;
+            }
+
+            if (str_contains($base, '*') || str_contains($base, '?') || str_contains($base, '[')) {
+                continue;
+            }
+
+            if ($relativeDir === $base || str_starts_with($relativeDir, $base . '/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<array{pattern: string, negated: bool}> $rules
+     */
+    private function shouldPruneByGitignore(string $relativeDir, array $rules): bool
+    {
+        $relativeDir = trim(str_replace('\\', '/', $relativeDir), '/');
+        if ($relativeDir === '') {
+            return false;
+        }
+
+        foreach ($rules as $rule) {
+            if ($rule['negated']) {
+                continue;
+            }
+
+            $pattern = ltrim(str_replace('\\', '/', $rule['pattern']), '/');
+            if (!str_ends_with($pattern, '/')) {
+                continue;
+            }
+
+            // Safe prune only for simple directory patterns without glob syntax.
+            if (str_contains($pattern, '*') || str_contains($pattern, '?') || str_contains($pattern, '[')) {
+                continue;
+            }
+
+            $ignoredDir = rtrim($pattern, '/');
+            if ($ignoredDir === '') {
+                continue;
+            }
+
+            if ($relativeDir !== $ignoredDir && !str_starts_with($relativeDir, $ignoredDir . '/')) {
+                continue;
+            }
+
+            if ($this->hasNegatedRuleInsideDirectory($ignoredDir, $rules)) {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<array{pattern: string, negated: bool}> $rules
+     */
+    private function hasNegatedRuleInsideDirectory(string $ignoredDir, array $rules): bool
+    {
+        $ignoredDir = rtrim($ignoredDir, '/');
+
+        foreach ($rules as $rule) {
+            if (!$rule['negated']) {
+                continue;
+            }
+
+            $pattern = ltrim(str_replace('\\', '/', $rule['pattern']), '/');
+            if ($pattern === '') {
+                continue;
+            }
+
+            // Any glob in negation means we cannot safely prune this subtree.
+            if (str_contains($pattern, '*') || str_contains($pattern, '?') || str_contains($pattern, '[')) {
+                if (str_starts_with(trim($pattern, '/'), $ignoredDir . '/')) {
+                    return true;
+                }
+                continue;
+            }
+
+            $negatedPath = rtrim($pattern, '/');
+            if ($negatedPath === $ignoredDir || str_starts_with($negatedPath, $ignoredDir . '/')) {
                 return true;
             }
         }
