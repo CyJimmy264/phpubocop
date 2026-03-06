@@ -19,7 +19,7 @@ function demo() {
     return 1;
     $x = 2;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -40,7 +40,7 @@ function demo($flag) {
         $x = 1;
     }
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -62,7 +62,7 @@ function demo($flag) {
     $x = 2;
     return $x;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

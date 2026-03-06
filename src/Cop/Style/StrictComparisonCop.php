@@ -32,7 +32,7 @@ final class StrictComparisonCop implements CopInterface, AutocorrectableCopInter
                     $file->path,
                     (int) $node->getStartLine(),
                     1,
-                    'Prefer strict comparison (===) over ==.'
+                    'Prefer strict comparison (===) over ==.',
                 );
                 return;
             }
@@ -43,7 +43,7 @@ final class StrictComparisonCop implements CopInterface, AutocorrectableCopInter
                     $file->path,
                     (int) $node->getStartLine(),
                     1,
-                    'Prefer strict comparison (!==) over !=.'
+                    'Prefer strict comparison (!==) over !=.',
                 );
             }
         });

@@ -43,7 +43,7 @@ final class MethodLengthCop implements CopInterface
                     $file->path,
                     (int) $node->getStartLine(),
                     1,
-                    sprintf('Method has too many lines. [%d/%d]', $length, $max)
+                    sprintf('Method has too many lines. [%d/%d]', $length, $max),
                 );
             }
         }

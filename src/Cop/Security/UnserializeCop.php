@@ -39,7 +39,7 @@ final class UnserializeCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 'Avoid unserialize() without strict allowed_classes control.',
-                'warning'
+                'warning',
             );
         });
 

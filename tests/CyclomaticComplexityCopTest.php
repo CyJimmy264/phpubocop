@@ -30,7 +30,7 @@ function decide($a, $b, $c) {
 
     return 0;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 4]);
@@ -52,7 +52,7 @@ function ok($a) {
 
     return 0;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);

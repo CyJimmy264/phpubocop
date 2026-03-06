@@ -37,7 +37,7 @@ final class EmptyCatchCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 'Empty catch block detected. Add handling, logging, or explicit comment.',
-                'warning'
+                'warning',
             );
         });
 

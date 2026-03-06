@@ -49,7 +49,7 @@ final class UnusedVariableCop implements CopInterface
                     $file->path,
                     $line,
                     1,
-                    sprintf('Variable $%s is assigned but never used.', $name)
+                    sprintf('Variable $%s is assigned but never used.', $name),
                 );
             }
         }

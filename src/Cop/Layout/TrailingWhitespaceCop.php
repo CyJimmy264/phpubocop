@@ -32,7 +32,7 @@ final class TrailingWhitespaceCop implements CopInterface, AutocorrectableCopInt
                 $file->path,
                 $index + 1,
                 $column,
-                'Trailing whitespace detected.'
+                'Trailing whitespace detected.',
             );
         }
 

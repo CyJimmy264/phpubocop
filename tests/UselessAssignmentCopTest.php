@@ -20,7 +20,7 @@ function demo() {
     $x = 2;
     return $x;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -41,7 +41,7 @@ function demo() {
     $x = 2;
     return $x;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -60,7 +60,7 @@ function demo() {
     $x = 3;
     return $x;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -84,7 +84,7 @@ function demo(bool $recalculate): float {
 
     return $discountAbs;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -102,7 +102,7 @@ function demo(): array {
     $ids = array_values(array_unique($ids));
     return $ids;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -129,7 +129,7 @@ function demo(): array {
 
     return $savedCoupons;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

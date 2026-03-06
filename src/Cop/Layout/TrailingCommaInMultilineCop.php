@@ -32,7 +32,7 @@ final class TrailingCommaInMultilineCop implements CopInterface, Autocorrectable
                 $file->path,
                 $missing['line'],
                 1,
-                'Put a trailing comma in multiline literals/calls to reduce diff noise.'
+                'Put a trailing comma in multiline literals/calls to reduce diff noise.',
             );
         }
 

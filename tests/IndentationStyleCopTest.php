@@ -83,7 +83,7 @@ final class IndentationStyleCopTest extends TestCase
 $s = <<<TXT
 	inside
 TXT;
-PHP
+PHP,
 );
 
         $fixed = $cop->autocorrect($source);

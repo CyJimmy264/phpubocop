@@ -22,7 +22,7 @@ if ($isReady === true) {
 if (false != $hasData) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -43,7 +43,7 @@ if ($ok === true) {
 if ($ready === false) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -60,7 +60,7 @@ $deliveryTimesJson = json_encode($data, JSON_UNESCAPED_UNICODE);
 if ($deliveryTimesJson === false) {
     $deliveryTimesJson = '{}';
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -80,7 +80,7 @@ if (strpos($s, 'x') === false) {
 if (preg_match($re, $s) === false) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -96,7 +96,7 @@ PHP
 if ($count === 0) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

@@ -100,7 +100,7 @@ final class BooleanLiteralComparisonCop implements CopInterface
                 $file->path,
                 (int) $node->getStartLine(),
                 1,
-                'Avoid comparing to boolean literals; simplify the condition.'
+                'Avoid comparing to boolean literals; simplify the condition.',
             );
         }
 

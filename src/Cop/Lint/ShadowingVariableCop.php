@@ -99,7 +99,7 @@ final class ShadowingVariableCop implements CopInterface
                             $path,
                             (int) $varNode->getStartLine(),
                             1,
-                            sprintf('Variable $%s shadows an existing variable in this scope.', $name)
+                            sprintf('Variable $%s shadows an existing variable in this scope.', $name),
                         );
                     }
 
@@ -121,7 +121,7 @@ final class ShadowingVariableCop implements CopInterface
                         $path,
                         (int) $node->var->getStartLine(),
                         1,
-                        sprintf('Variable $%s shadows an existing variable in this scope.', $name)
+                        sprintf('Variable $%s shadows an existing variable in this scope.', $name),
                     );
                 }
 

@@ -54,7 +54,7 @@ final class Runner
 
         usort(
             $offenses,
-            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName]
+            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName],
         );
 
         return $offenses;

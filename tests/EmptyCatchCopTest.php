@@ -19,7 +19,7 @@ try {
     risky();
 } catch (RuntimeException $e) {
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -38,7 +38,7 @@ try {
 } catch (RuntimeException $e) {
     error_log($e->getMessage());
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

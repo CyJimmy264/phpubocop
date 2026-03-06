@@ -31,7 +31,7 @@ final class LineLengthCop implements CopInterface
                 $file->path,
                 $index + 1,
                 $max + 1,
-                sprintf('Line is too long. [%d/%d]', $length, $max)
+                sprintf('Line is too long. [%d/%d]', $length, $max),
             );
         }
 

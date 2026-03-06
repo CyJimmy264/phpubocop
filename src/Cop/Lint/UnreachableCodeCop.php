@@ -50,7 +50,7 @@ final class UnreachableCodeCop implements CopInterface
                     $file->path,
                     (int) $statement->getStartLine(),
                     1,
-                    'Unreachable code detected.'
+                    'Unreachable code detected.',
                 );
                 continue;
             }

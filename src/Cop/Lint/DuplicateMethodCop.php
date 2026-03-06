@@ -62,7 +62,7 @@ final class DuplicateMethodCop implements CopInterface
                     $path,
                     (int) $node->getStartLine(),
                     1,
-                    sprintf('Duplicate function declaration: %s().', $node->name->toString())
+                    sprintf('Duplicate function declaration: %s().', $node->name->toString()),
                 );
                 continue;
             }
@@ -84,7 +84,7 @@ final class DuplicateMethodCop implements CopInterface
                     $path,
                     (int) $method->getStartLine(),
                     1,
-                    sprintf('Duplicate method declaration: %s().', $method->name->toString())
+                    sprintf('Duplicate method declaration: %s().', $method->name->toString()),
                 );
                 continue;
             }

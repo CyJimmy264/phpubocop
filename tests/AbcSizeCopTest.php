@@ -24,7 +24,7 @@ function process($items) {
     }
     return $sum;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 3]);
@@ -43,7 +43,7 @@ function tiny() {
     $a = 1;
     return $a;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);

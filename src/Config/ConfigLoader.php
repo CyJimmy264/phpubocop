@@ -98,6 +98,7 @@ final class ConfigLoader
             ],
             'Security/Exec' => [
                 'Enabled' => true,
+                'AllowedFilePatterns' => [],
             ],
             'Security/EvalAndDynamicInclude' => [
                 'Enabled' => true,

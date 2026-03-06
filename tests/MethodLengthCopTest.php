@@ -21,7 +21,7 @@ function demo() {
     $c = 3;
     return $a + $b + $c;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);
@@ -38,7 +38,7 @@ PHP
 function tiny() {
     return 1;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);
@@ -58,7 +58,7 @@ function demo() {
     ];
     return $data;
 }
-PHP
+PHP,
 );
 
         $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
@@ -80,7 +80,7 @@ function demo() {
     ];
     return $data;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['hash']]);
@@ -100,7 +100,7 @@ line2
 TXT;
     return $text;
 }
-PHP
+PHP,
 );
 
         $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
@@ -122,7 +122,7 @@ function demo($service) {
         ->stepThree();
     return $result;
 }
-PHP
+PHP,
 );
 
         $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
@@ -144,7 +144,7 @@ function demo($service) {
         ->stepThree();
     return $result;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['method_call']]);

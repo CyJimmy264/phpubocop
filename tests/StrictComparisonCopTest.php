@@ -22,7 +22,7 @@ if ($a == $b) {
 if ($c != $d) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -43,7 +43,7 @@ if ($a === $b) {
 if ($c !== $d) {
     return;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -62,7 +62,7 @@ if (1 == 2) {
 if ('a' != 'b') {
     return;
 }
-PHP
+PHP,
 );
 
         $fixed = $cop->autocorrect($source);
@@ -79,7 +79,7 @@ PHP
 if ($a == $b) {
     return;
 }
-PHP
+PHP,
 );
 
         $fixed = $cop->autocorrect($source);

@@ -33,7 +33,7 @@ function evaluate($a, $b, $c) {
 
     return 0;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);
@@ -55,7 +55,7 @@ function tiny($a) {
 
     return 0;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);

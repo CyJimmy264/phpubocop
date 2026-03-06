@@ -45,8 +45,8 @@ final class CyclomaticComplexityCop implements CopInterface
                         'Cyclomatic complexity for %s is too high. [%d/%d]',
                         $this->scopeName($node),
                         $complexity,
-                        $max
-                    )
+                        $max,
+                    ),
                 );
             }
         }

@@ -19,7 +19,7 @@ class A {
     public function run() {}
     public function run() {}
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -37,7 +37,7 @@ namespace Demo;
 
 function f() {}
 function f() {}
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -59,7 +59,7 @@ class A {
     public function run() {}
     public function stop() {}
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

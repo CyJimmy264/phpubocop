@@ -32,7 +32,7 @@ final class EvalAndDynamicIncludeCop implements CopInterface
                     (int) $node->getStartLine(),
                     1,
                     'Avoid eval(). It can execute untrusted input.',
-                    'warning'
+                    'warning',
                 );
 
                 return;
@@ -63,7 +63,7 @@ final class EvalAndDynamicIncludeCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 sprintf('Avoid dynamic %s paths. Use fixed, validated paths.', $kind),
-                'warning'
+                'warning',
             );
         });
 

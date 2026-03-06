@@ -48,7 +48,7 @@ final class IndentationStyleCop implements CopInterface, AutocorrectableCopInter
                 $file->path,
                 $lineNumber,
                 $tabPos + 1,
-                'Use spaces for indentation; tabs are not allowed.'
+                'Use spaces for indentation; tabs are not allowed.',
             );
         }
 

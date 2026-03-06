@@ -31,7 +31,7 @@ final class TextFormatter implements FormatterInterface
                     $offense->column,
                     $offense->severity,
                     $offense->message,
-                    $offense->copName
+                    $offense->copName,
                 );
             }
             $parts[] = implode(PHP_EOL, $lines);
@@ -127,7 +127,7 @@ final class TextFormatter implements FormatterInterface
             '%d files inspected, %d offense(s) detected in %d file(s)',
             $fileCount,
             $offenseCount,
-            $offendingFileCount
+            $offendingFileCount,
         );
     }
 

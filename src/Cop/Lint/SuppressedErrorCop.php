@@ -33,7 +33,7 @@ final class SuppressedErrorCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 'Avoid suppressing errors with @; handle errors explicitly.',
-                'warning'
+                'warning',
             );
         });
 

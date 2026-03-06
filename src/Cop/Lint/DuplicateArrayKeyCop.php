@@ -45,7 +45,7 @@ final class DuplicateArrayKeyCop implements CopInterface
                         $file->path,
                         (int) $item->getStartLine(),
                         1,
-                        sprintf('Duplicate array key %s. Later value overrides previous one.', $this->displayKey($normalizedKey))
+                        sprintf('Duplicate array key %s. Later value overrides previous one.', $this->displayKey($normalizedKey)),
                     );
                     continue;
                 }

@@ -87,12 +87,12 @@ final class FileFinder
                 }
 
                 return true;
-            }
+            },
         );
 
         $iterator = new RecursiveIteratorIterator(
             $filtered,
-            RecursiveIteratorIterator::LEAVES_ONLY
+            RecursiveIteratorIterator::LEAVES_ONLY,
         );
 
         foreach ($iterator as $fileInfo) {
@@ -141,7 +141,7 @@ final class FileFinder
 
         $cmd = sprintf(
             'git -C %s ls-files --cached --others --exclude-standard -z -- . 2>/dev/null',
-            escapeshellarg($realPath)
+            escapeshellarg($realPath),
         );
         $output = shell_exec($cmd);
         if (!is_string($output) || $output === '') {

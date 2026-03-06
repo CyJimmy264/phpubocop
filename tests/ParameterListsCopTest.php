@@ -18,7 +18,7 @@ final class ParameterListsCopTest extends TestCase
 function demo($a, $b, $c, $d, $e, $f) {
     return $a;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 5]);
@@ -33,7 +33,7 @@ PHP
         $source = new SourceFile('foo.php', <<<'PHP'
 <?php
 $fn = fn($a, $b, $c) => $a + $b + $c;
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 2]);
@@ -49,7 +49,7 @@ PHP
 function tiny($a, $b) {
     return $a + $b;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['Max' => 3]);

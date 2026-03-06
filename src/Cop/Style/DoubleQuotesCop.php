@@ -34,7 +34,7 @@ final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface
                 $file->path,
                 (int) $node->getStartLine(),
                 1,
-                'Prefer single-quoted strings when interpolation is not needed.'
+                'Prefer single-quoted strings when interpolation is not needed.',
             );
         });
 

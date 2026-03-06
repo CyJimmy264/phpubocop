@@ -33,7 +33,7 @@ final class EvalUsageCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 'Avoid using eval().',
-                'warning'
+                'warning',
             );
         });
 

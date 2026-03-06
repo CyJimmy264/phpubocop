@@ -38,7 +38,7 @@ final class EvalAndDynamicIncludeCopTest extends TestCase
 <?php
 include __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/app.php';
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -52,7 +52,7 @@ PHP
         $source = new SourceFile('foo.php', <<<'PHP'
 <?php
 require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php';
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, [

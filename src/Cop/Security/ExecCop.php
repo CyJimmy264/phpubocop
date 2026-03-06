@@ -30,6 +30,11 @@ final class ExecCop implements CopInterface
 
     public function inspect(SourceFile $file, array $config = []): array
     {
+        $allowedFilePatterns = $config['AllowedFilePatterns'] ?? [];
+        if ($this->isAllowedFile($file->path, is_array($allowedFilePatterns) ? $allowedFilePatterns : [])) {
+            return [];
+        }
+
         $offenses = [];
 
         AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
@@ -48,10 +53,28 @@ final class ExecCop implements CopInterface
                 (int) $node->getStartLine(),
                 1,
                 sprintf('Avoid %s(). It can introduce command injection risks.', $name),
-                'warning'
+                'warning',
             );
         });
 
         return $offenses;
+    }
+
+    /** @param array<int,string> $patterns */
+    private function isAllowedFile(string $path, array $patterns): bool
+    {
+        $normalized = str_replace('\\', '/', $path);
+        foreach ($patterns as $pattern) {
+            $pattern = str_replace('\\', '/', (string) $pattern);
+            if ($pattern === '') {
+                continue;
+            }
+
+            if (fnmatch($pattern, $normalized) || fnmatch('*/' . ltrim($pattern, '/'), $normalized)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

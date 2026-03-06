@@ -19,7 +19,7 @@ $data = [
     'id' => 1,
     'id' => 2,
 ];
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -40,7 +40,7 @@ $data = [
     1 => 3,
     2 => 4,
 ];
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -58,7 +58,7 @@ $data = [
     $key => 1,
     $key => 2,
 ];
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

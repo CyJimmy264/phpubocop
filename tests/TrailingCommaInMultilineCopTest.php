@@ -19,7 +19,7 @@ $data = [
     'a' => 1,
     'b' => 2
 ];
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -37,7 +37,7 @@ run(
     1,
     2
 );
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -54,7 +54,7 @@ $data = [
     'a' => 1,
     'b' => 2
 ];
-PHP
+PHP,
 );
 
         $fixed = $cop->autocorrect($source);
@@ -71,7 +71,7 @@ $data = [
     'a' => 1,
     'b' => 2,
 ];
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -88,7 +88,7 @@ $result = $query->where([
     'a' => 1,
     'b' => 2,
 ])->fetch();
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

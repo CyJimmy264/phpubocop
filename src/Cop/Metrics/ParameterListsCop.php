@@ -42,7 +42,7 @@ final class ParameterListsCop implements CopInterface
                     $file->path,
                     (int) $node->getStartLine(),
                     1,
-                    sprintf('Method has too many parameters. [%d/%d]', $count, $max)
+                    sprintf('Method has too many parameters. [%d/%d]', $count, $max),
                 );
             }
         }

@@ -50,8 +50,8 @@ final class AbcSizeCop implements CopInterface
                         $b,
                         $c,
                         $size,
-                        $max
-                    )
+                        $max,
+                    ),
                 );
             }
         }

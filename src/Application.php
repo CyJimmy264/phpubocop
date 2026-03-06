@@ -51,7 +51,7 @@ final class Application
 
         usort(
             $offenses,
-            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName]
+            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName],
         );
 
         $formatter = $this->resolveFormatter($format);
@@ -204,7 +204,7 @@ TXT;
                 (int) ($stats['included'] ?? 0),
                 (int) ($stats['excluded_by_config'] ?? 0),
                 (int) ($stats['ignored_by_gitignore'] ?? 0),
-            )
+            ),
         );
     }
 }

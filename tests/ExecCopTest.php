@@ -18,7 +18,7 @@ final class ExecCopTest extends TestCase
 exec($cmd);
 shell_exec($cmd);
 proc_open($cmd, [], $pipes);
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -33,6 +33,18 @@ PHP
         $source = new SourceFile('foo.php', "<?php\ntrim(\$value);\n");
 
         $offenses = $cop->inspect($source);
+
+        self::assertCount(0, $offenses);
+    }
+
+    public function testCanSkipConfiguredAllowedFiles(): void
+    {
+        $cop = new ExecCop();
+        $source = new SourceFile('/tmp/project/bin/git_helper.php', "<?php\nshell_exec(\$cmd);\n");
+
+        $offenses = $cop->inspect($source, [
+            'AllowedFilePatterns' => ['bin/git_helper.php'],
+        ]);
 
         self::assertCount(0, $offenses);
     }

@@ -19,7 +19,7 @@ function demo() {
     $unused = 1;
     return 42;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -38,7 +38,7 @@ function demo() {
     $used = 1;
     return $used;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -55,7 +55,7 @@ function demo() {
     $_meta = 1;
     return 42;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -71,7 +71,7 @@ PHP
 function demo($param) {
     return 42;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source, ['IgnoreParameters' => false]);
@@ -89,7 +89,7 @@ function demo() {
     $title = 'Hi';
     return compact('title');
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -107,7 +107,7 @@ function demo(array $payload) {
     extract($payload);
     return 42;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -125,7 +125,7 @@ function demo(string $query) {
     parse_str($query);
     return 42;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -143,7 +143,7 @@ function demo(string $query) {
     parse_str($query, $out);
     return $out;
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);

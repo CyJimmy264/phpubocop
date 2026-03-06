@@ -63,7 +63,7 @@ Security/Exec:
   Enabled: false
 Security/EvalAndDynamicInclude:
   Enabled: false
-YAML
+YAML,
 );
 
         $app = new Application();
@@ -99,7 +99,7 @@ $data = [
     'a' => 1,
     'b' => 2
 ];
-PHP
+PHP,
 );
 
         file_put_contents($config, <<<'YAML'
@@ -149,7 +149,7 @@ Security/Exec:
   Enabled: false
 Security/EvalAndDynamicInclude:
   Enabled: false
-YAML
+YAML,
 );
 
         $app = new Application();
@@ -183,7 +183,7 @@ YAML
         file_put_contents($dir . '/.phpubocop.yml', <<<'YAML'
 Style/DoubleQuotes:
   Enabled: false
-YAML
+YAML,
 );
 
         $app = new Application();
@@ -217,12 +217,12 @@ YAML
         file_put_contents($dir . '/.phpubocop.yml', <<<'YAML'
 Style/DoubleQuotes:
   Enabled: true
-YAML
+YAML,
 );
         file_put_contents($targetDir . '/.phpubocop.yml', <<<'YAML'
 Style/DoubleQuotes:
   Enabled: false
-YAML
+YAML,
 );
 
         $app = new Application();

@@ -53,7 +53,7 @@ final class UselessAssignmentCop implements CopInterface
                     $path,
                     $pendingAssignment[$name]['line'],
                     1,
-                    sprintf('Useless assignment to $%s. Value is overwritten before being read.', $name)
+                    sprintf('Useless assignment to $%s. Value is overwritten before being read.', $name),
                 );
             }
 

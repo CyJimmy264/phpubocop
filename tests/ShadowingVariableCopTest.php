@@ -21,7 +21,7 @@ function demo(array $items) {
         echo $item;
     }
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -44,7 +44,7 @@ function demo() {
         echo $e->getMessage();
     }
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
@@ -63,7 +63,7 @@ function demo(array $items) {
         echo $item;
     }
 }
-PHP
+PHP,
 );
 
         $offenses = $cop->inspect($source);
