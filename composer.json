@@ -1,9 +1,8 @@
 {
-  "name": "mveynberg/phpubocop",
-  "version": "0.1.0",
+  "name": "cyjimmy264/phpubocop",
   "description": "RuboCop-inspired style and lint checker for PHP",
   "type": "library",
-  "license": "MIT",
+  "license": "BSD-2-Clause",
   "require": {
     "php": ">=8.1",
     "nikic/php-parser": "^5.0",

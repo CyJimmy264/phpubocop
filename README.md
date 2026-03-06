@@ -11,7 +11,7 @@ PHPuboCop is a RuboCop-inspired linter for PHP projects.
 ## Installation
 
 ```bash
-composer require --dev mveynberg/phpubocop
+composer require --dev cyjimmy264/phpubocop
 ```
 
 ## Usage
