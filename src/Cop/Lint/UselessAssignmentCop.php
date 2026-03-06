@@ -13,6 +13,35 @@ use PhpParser\Node\Expr;
 
 final class UselessAssignmentCop implements CopInterface
 {
+    /** @var array<string,array{line:int,context:string}> */
+    private array $pendingAssignment = [];
+    /** @var list<Offense> */
+    private array $scopeOffenses = [];
+    private string $currentPath = '';
+
+    /** @var list<class-string<Node>> */
+    private const CONTROL_FLOW_NODES = [
+        Node\Stmt\If_::class,
+        Node\Stmt\ElseIf_::class,
+        Node\Stmt\Else_::class,
+        Node\Stmt\For_::class,
+        Node\Stmt\Foreach_::class,
+        Node\Stmt\While_::class,
+        Node\Stmt\Do_::class,
+        Node\Stmt\Switch_::class,
+        Node\Stmt\Case_::class,
+        Node\Stmt\TryCatch::class,
+        Node\Stmt\Catch_::class,
+        Expr\Ternary::class,
+        Expr\BinaryOp\BooleanAnd::class,
+        Expr\BinaryOp\LogicalAnd::class,
+        Expr\BinaryOp\BooleanOr::class,
+        Expr\BinaryOp\LogicalOr::class,
+        Expr\BinaryOp\LogicalXor::class,
+        Expr\BinaryOp\Coalesce::class,
+        Expr\Match_::class,
+    ];
+
     public function name(): string
     {
         return 'Lint/UselessAssignment';
@@ -38,81 +67,37 @@ final class UselessAssignmentCop implements CopInterface
     /** @return list<Offense> */
     private function analyzeScope(Node $scope, string $path): array
     {
-        /** @var array<string,array{line:int,context:string}> $pendingAssignment */
-        $pendingAssignment = [];
-        $offenses = [];
-        $this->visitScopeNode($scope, $scope, '', $path, $pendingAssignment, $offenses);
-        return $offenses;
+        $this->currentPath = $path;
+        $this->pendingAssignment = [];
+        $this->scopeOffenses = [];
+
+        $this->visitScopeNode($scope, $scope, '');
+        return $this->scopeOffenses;
     }
 
-    /**
-     * @param array<string,array{line:int,context:string}> $pendingAssignment
-     * @param list<Offense> $offenses
-     */
-    private function visitScopeNode(
-        Node $node,
-        Node $scope,
-        string $context,
-        string $path,
-        array &$pendingAssignment,
-        array &$offenses,
-    ): void {
+    private function visitScopeNode(Node $node, Node $scope, string $context): void
+    {
         if ($node !== $scope && $this->isScope($node)) {
             return;
         }
 
-        if ($node instanceof Expr\Assign) {
-            $this->visitScopeNode($node->expr, $scope, $context, $path, $pendingAssignment, $offenses);
-            $this->markAssignedVariable(
-                $node->var,
-                (int) $node->getStartLine(),
-                $context,
-                $path,
-                $pendingAssignment,
-                $offenses,
-            );
+        if ($this->handleAssignmentNode($node, $scope, $context)) {
             return;
         }
-
-        if ($node instanceof Expr\AssignOp || $node instanceof Expr\AssignRef) {
-            $this->markReadVariable($node->var, $pendingAssignment);
-            $this->markAssignedVariable(
-                $node->var,
-                (int) $node->getStartLine(),
-                $context,
-                $path,
-                $pendingAssignment,
-                $offenses,
-            );
-            $this->visitScopeNode($node->expr, $scope, $context, $path, $pendingAssignment, $offenses);
-            return;
-        }
-
-        if ($node instanceof Expr\Variable && is_string($node->name)) {
-            unset($pendingAssignment[$node->name]);
+        if ($this->handleVariableReadNode($node)) {
             return;
         }
 
         $nextContext = $this->nextContext($node, $context);
-        $this->visitSubNodes($node, $scope, $nextContext, $path, $pendingAssignment, $offenses);
+        $this->visitSubNodes($node, $scope, $nextContext);
     }
 
-    /**
-     * @param array<string,array{line:int,context:string}> $pendingAssignment
-     * @param list<Offense> $offenses
-     */
-    private function visitSubNodes(
-        Node $node,
-        Node $scope,
-        string $context,
-        string $path,
-        array &$pendingAssignment,
-        array &$offenses,
-    ): void {
+    private function visitSubNodes(Node $node, Node $scope, string $context): void
+    {
         foreach ($node->getSubNodeNames() as $subNodeName) {
             $subNode = $node->{$subNodeName};
             if ($subNode instanceof Node) {
-                $this->visitScopeNode($subNode, $scope, $context, $path, $pendingAssignment, $offenses);
+                $this->visitScopeNode($subNode, $scope, $context);
                 continue;
             }
 
@@ -122,7 +107,7 @@ final class UselessAssignmentCop implements CopInterface
 
             foreach ($subNode as $child) {
                 if ($child instanceof Node) {
-                    $this->visitScopeNode($child, $scope, $context, $path, $pendingAssignment, $offenses);
+                    $this->visitScopeNode($child, $scope, $context);
                 }
             }
         }
@@ -147,81 +132,104 @@ final class UselessAssignmentCop implements CopInterface
 
     private function isControlFlowNode(Node $node): bool
     {
-        return $node instanceof Node\Stmt\If_
-            || $node instanceof Node\Stmt\ElseIf_
-            || $node instanceof Node\Stmt\Else_
-            || $node instanceof Node\Stmt\For_
-            || $node instanceof Node\Stmt\Foreach_
-            || $node instanceof Node\Stmt\While_
-            || $node instanceof Node\Stmt\Do_
-            || $node instanceof Node\Stmt\Switch_
-            || $node instanceof Node\Stmt\Case_
-            || $node instanceof Node\Stmt\TryCatch
-            || $node instanceof Node\Stmt\Catch_
-            || $node instanceof Expr\Ternary
-            || $node instanceof Expr\BinaryOp\BooleanAnd
-            || $node instanceof Expr\BinaryOp\LogicalAnd
-            || $node instanceof Expr\BinaryOp\BooleanOr
-            || $node instanceof Expr\BinaryOp\LogicalOr
-            || $node instanceof Expr\BinaryOp\LogicalXor
-            || $node instanceof Expr\BinaryOp\Coalesce
-            || $node instanceof Expr\Match_;
+        foreach (self::CONTROL_FLOW_NODES as $controlFlowClass) {
+            if ($node instanceof $controlFlowClass) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    /** @param array<string,array{line:int,context:string}> $pendingAssignment */
-    private function markReadVariable(Node $target, array &$pendingAssignment): void
+    private function markReadVariable(Node $target): void
     {
         if ($target instanceof Expr\Variable && is_string($target->name)) {
-            unset($pendingAssignment[$target->name]);
+            unset($this->pendingAssignment[$target->name]);
             return;
         }
 
-        foreach ($target->getSubNodeNames() as $subNodeName) {
-            $subNode = $target->{$subNodeName};
-
-            if ($subNode instanceof Node) {
-                $this->markReadVariable($subNode, $pendingAssignment);
-                continue;
-            }
-
-            if (is_array($subNode)) {
-                foreach ($subNode as $child) {
-                    if ($child instanceof Node) {
-                        $this->markReadVariable($child, $pendingAssignment);
-                    }
-                }
-            }
+        foreach ($this->childNodesOf($target) as $child) {
+            $this->markReadVariable($child);
         }
     }
 
-    /**
-     * @param array<string,array{line:int,context:string}> $pendingAssignment
-     * @param list<Offense> $offenses
-     */
-    private function markAssignedVariable(
-        Node $target,
-        int $line,
-        string $context,
-        string $path,
-        array &$pendingAssignment,
-        array &$offenses,
-    ): void
+    private function markAssignedVariable(Node $target, int $line, string $context): void
     {
         if (!$target instanceof Expr\Variable || !is_string($target->name)) {
             return;
         }
 
         $name = $target->name;
-        if (isset($pendingAssignment[$name]) && $pendingAssignment[$name]['context'] === $context) {
-            $offenses[] = new Offense(
+        if (isset($this->pendingAssignment[$name]) && $this->pendingAssignment[$name]['context'] === $context) {
+            $this->scopeOffenses[] = new Offense(
                 $this->name(),
-                $path,
-                $pendingAssignment[$name]['line'],
+                $this->currentPath,
+                $this->pendingAssignment[$name]['line'],
                 1,
                 sprintf('Useless assignment to $%s. Value is overwritten before being read.', $name),
             );
         }
 
-        $pendingAssignment[$name] = ['line' => $line, 'context' => $context];
+        $this->pendingAssignment[$name] = ['line' => $line, 'context' => $context];
+    }
+
+    private function handleAssignmentNode(Node $node, Node $scope, string $context): bool
+    {
+        if ($node instanceof Expr\Assign) {
+            $this->visitScopeNode($node->expr, $scope, $context);
+            $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $context);
+            return true;
+        }
+
+        if (!$node instanceof Expr\AssignOp && !$node instanceof Expr\AssignRef) {
+            return false;
+        }
+
+        $this->markReadVariable($node->var);
+        $this->markAssignedVariable($node->var, (int) $node->getStartLine(), $context);
+        $this->visitScopeNode($node->expr, $scope, $context);
+        return true;
+    }
+
+    private function handleVariableReadNode(Node $node): bool
+    {
+        if (!$node instanceof Expr\Variable || !is_string($node->name)) {
+            return false;
+        }
+
+        unset($this->pendingAssignment[$node->name]);
+        return true;
+    }
+
+    /** @return list<Node> */
+    private function childNodesOf(Node $target): array
+    {
+        $children = [];
+        foreach ($target->getSubNodeNames() as $subNodeName) {
+            $subNode = $target->{$subNodeName};
+            if ($subNode instanceof Node) {
+                $children[] = $subNode;
+                continue;
+            }
+
+            if (is_array($subNode)) {
+                $this->appendNodeChildren($children, $subNode);
+            }
+        }
+
+        return $children;
+    }
+
+    /**
+     * @param list<Node> $children
+     * @param array<int,mixed> $subNode
+     */
+    private function appendNodeChildren(array &$children, array $subNode): void
+    {
+        foreach ($subNode as $child) {
+            if ($child instanceof Node) {
+                $children[] = $child;
+            }
+        }
     }
 }
