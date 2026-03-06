@@ -19,111 +19,202 @@ final class Application
     {
         [$paths, $configPath, $format, $autocorrect, $autocorrectAll, $verbose] = $this->parseArgs($argv);
 
-        $configLoader = new ConfigLoader();
-
         $cops = CopRegistry::default();
+        $configLoader = new ConfigLoader();
         $runner = new Runner($cops);
         $offenses = [];
         $inspectedFiles = [];
+        $runContext = [
+            'configPath' => $configPath,
+            'autocorrect' => $autocorrect,
+            'autocorrectAll' => $autocorrectAll,
+            'verbose' => $verbose,
+            'cops' => $cops,
+            'configLoader' => $configLoader,
+            'runner' => $runner,
+        ];
+
         foreach ($paths as $path) {
-            $resolvedConfig = $this->resolveConfigPathForTarget($path, $configPath);
-            $config = $configLoader->load($resolvedConfig['path']);
-
-            if ($autocorrect) {
-                (new Autocorrector($cops))->run([$path], $config, $autocorrectAll);
-            }
-
-            if ($verbose) {
-                $this->printVerboseConfig($path, $resolvedConfig, $config);
-            }
-
-            foreach ($runner->run($path, $config) as $offense) {
-                $offenses[] = $offense;
-            }
-            foreach ($runner->lastInspectedFiles() as $filePath) {
-                $inspectedFiles[$filePath] = true;
-            }
-
-            if ($verbose) {
-                $this->printVerboseDiscovery($runner->lastFileStats());
-            }
+            $this->runForPath($path, $runContext, $offenses, $inspectedFiles);
         }
 
+        return $this->finalizeRun($offenses, $inspectedFiles, $format);
+    }
+
+    /**
+     * @param array{
+     *   configPath:?string,
+     *   autocorrect:bool,
+     *   autocorrectAll:bool,
+     *   verbose:bool,
+     *   cops:list<object>,
+     *   configLoader:ConfigLoader,
+     *   runner:Runner
+     * } $context
+     * @param list<Offense> $offenses
+     * @param array<string,bool> $inspectedFiles
+     */
+    private function runForPath(
+        string $path,
+        array $context,
+        array &$offenses,
+        array &$inspectedFiles,
+    ): void {
+        $resolvedConfig = $this->resolveConfigPathForTarget($path, $context['configPath']);
+        $config = $context['configLoader']->load($resolvedConfig['path']);
+
+        if ($context['autocorrect']) {
+            (new Autocorrector($context['cops']))->run([$path], $config, $context['autocorrectAll']);
+        }
+
+        if ($context['verbose']) {
+            $this->printVerboseConfig($path, $resolvedConfig, $config);
+        }
+
+        foreach ($context['runner']->run($path, $config) as $offense) {
+            $offenses[] = $offense;
+        }
+
+        $this->collectInspectedFiles($context['runner']->lastInspectedFiles(), $inspectedFiles);
+
+        if ($context['verbose']) {
+            $this->printVerboseDiscovery($context['runner']->lastFileStats());
+        }
+    }
+
+    /** @param list<string> $files @param array<string,bool> $inspectedFiles */
+    private function collectInspectedFiles(array $files, array &$inspectedFiles): void
+    {
+        foreach ($files as $filePath) {
+            $inspectedFiles[$filePath] = true;
+        }
+    }
+
+    /** @param list<Offense> $offenses @param array<string,bool> $inspectedFiles */
+    private function finalizeRun(array $offenses, array $inspectedFiles, string $format): int
+    {
         usort(
             $offenses,
             static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName],
         );
 
         $formatter = $this->resolveFormatter($format);
-        echo $formatter->format($offenses, ['inspected_files' => array_keys($inspectedFiles)]);
+        echo $formatter->format(
+            $offenses,
+            ['inspected_files' => array_keys($inspectedFiles)],
+        );
 
         return $offenses === [] ? 0 : 1;
     }
 
     private function parseArgs(array $argv): array
     {
-        $paths = [];
-        $configPath = null;
-        $format = 'text';
-        $autocorrect = false;
-        $autocorrectAll = false;
-        $verbose = false;
+        $state = [
+            'paths' => [],
+            'configPath' => null,
+            'format' => 'text',
+            'autocorrect' => false,
+            'autocorrectAll' => false,
+            'verbose' => false,
+        ];
 
         for ($i = 1, $count = count($argv); $i < $count; $i++) {
-            $arg = $argv[$i];
-            if ($arg === '--help' || $arg === '-h') {
+            $arg = (string) $argv[$i];
+            if ($this->isHelpArg($arg)) {
                 $this->printHelp();
                 exit(0);
             }
 
-            if (str_starts_with($arg, '--config=')) {
-                $configPath = substr($arg, strlen('--config='));
-                continue;
-            }
-
-            if ($arg === '--config') {
-                $i++;
-                $configPath = $argv[$i] ?? null;
-                continue;
-            }
-
-            if (str_starts_with($arg, '--format=')) {
-                $format = substr($arg, strlen('--format='));
-                continue;
-            }
-
-            if ($arg === '--format') {
-                $i++;
-                $format = $argv[$i] ?? 'text';
-                continue;
-            }
-
-            if ($arg === '--autocorrect') {
-                $autocorrect = true;
-                continue;
-            }
-
-            if ($arg === '--autocorrect-all') {
-                $autocorrect = true;
-                $autocorrectAll = true;
-                continue;
-            }
-
-            if ($arg === '--verbose' || $arg === '-v') {
-                $verbose = true;
-                continue;
-            }
-
-            if (!str_starts_with($arg, '--')) {
-                $paths[] = $arg;
-            }
+            $this->consumeArg($arg, $argv, $i, $state);
         }
 
-        if ($paths === []) {
-            $paths[] = '.';
+        if ($state['paths'] === []) {
+            $state['paths'][] = '.';
         }
 
-        return [$paths, $configPath, strtolower($format), $autocorrect, $autocorrectAll, $verbose];
+        return [
+            $state['paths'],
+            $state['configPath'],
+            strtolower((string) $state['format']),
+            (bool) $state['autocorrect'],
+            (bool) $state['autocorrectAll'],
+            (bool) $state['verbose'],
+        ];
+    }
+
+    private function isHelpArg(string $arg): bool
+    {
+        return $arg === '--help' || $arg === '-h';
+    }
+
+    /** @param array{paths:list<string>,configPath:?string,format:string,autocorrect:bool,autocorrectAll:bool,verbose:bool} $state */
+    private function consumeArg(string $arg, array $argv, int &$i, array &$state): void
+    {
+        if ($this->consumeConfigArg($arg, $argv, $i, $state)) {
+            return;
+        }
+        if ($this->consumeFormatArg($arg, $argv, $i, $state)) {
+            return;
+        }
+        if ($this->consumeToggleArg($arg, $state)) {
+            return;
+        }
+
+        if (!str_starts_with($arg, '--')) {
+            $state['paths'][] = $arg;
+        }
+    }
+
+    /** @param array{configPath:?string} $state */
+    private function consumeConfigArg(string $arg, array $argv, int &$i, array &$state): bool
+    {
+        if (str_starts_with($arg, '--config=')) {
+            $state['configPath'] = substr($arg, strlen('--config='));
+            return true;
+        }
+        if ($arg !== '--config') {
+            return false;
+        }
+
+        $i++;
+        $state['configPath'] = $argv[$i] ?? null;
+        return true;
+    }
+
+    /** @param array{format:string} $state */
+    private function consumeFormatArg(string $arg, array $argv, int &$i, array &$state): bool
+    {
+        if (str_starts_with($arg, '--format=')) {
+            $state['format'] = substr($arg, strlen('--format='));
+            return true;
+        }
+        if ($arg !== '--format') {
+            return false;
+        }
+
+        $i++;
+        $state['format'] = $argv[$i] ?? 'text';
+        return true;
+    }
+
+    /** @param array{autocorrect:bool,autocorrectAll:bool,verbose:bool} $state */
+    private function consumeToggleArg(string $arg, array &$state): bool
+    {
+        if ($arg === '--autocorrect') {
+            $state['autocorrect'] = true;
+            return true;
+        }
+        if ($arg === '--autocorrect-all') {
+            $state['autocorrect'] = true;
+            $state['autocorrectAll'] = true;
+            return true;
+        }
+        if ($arg === '--verbose' || $arg === '-v') {
+            $state['verbose'] = true;
+            return true;
+        }
+
+        return false;
     }
 
     /** @return array{path:?string,source:string} */
@@ -185,7 +276,9 @@ TXT;
     {
         $configPath = $resolvedConfig['path'] ?? '<defaults>';
         $exclude = $config['AllCops']['Exclude'] ?? [];
-        $excludeText = $exclude === [] ? '(none)' : implode(', ', array_map(static fn ($item): string => (string) $item, $exclude));
+        $excludeText = $exclude === []
+            ? '(none)'
+            : implode(', ', array_map(static fn ($item): string => (string) $item, $exclude));
 
         fwrite(STDERR, sprintf("[phpubocop] target: %s\n", $path));
         fwrite(STDERR, sprintf("[phpubocop] config: %s (%s)\n", $configPath, $resolvedConfig['source']));
