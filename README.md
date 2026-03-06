@@ -35,6 +35,7 @@ Exit code:
 - `--autocorrect` applies only cops explicitly marked as safe for autocorrection.
 - `--autocorrect-all` applies all autocorrectable cops, including unsafe ones.
 - `--verbose` prints selected config source and file discovery stats to `STDERR`.
+- Default text output uses RuboCop-like progress markers per file (`.`, `C`, `W`, `E`, `F`) plus detailed offense lines.
 
 ## Configuration
 

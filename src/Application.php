@@ -24,6 +24,7 @@ final class Application
         $cops = CopRegistry::default();
         $runner = new Runner($cops);
         $offenses = [];
+        $inspectedFiles = [];
         foreach ($paths as $path) {
             $resolvedConfig = $this->resolveConfigPathForTarget($path, $configPath);
             $config = $configLoader->load($resolvedConfig['path']);
@@ -39,6 +40,9 @@ final class Application
             foreach ($runner->run($path, $config) as $offense) {
                 $offenses[] = $offense;
             }
+            foreach ($runner->lastInspectedFiles() as $filePath) {
+                $inspectedFiles[$filePath] = true;
+            }
 
             if ($verbose) {
                 $this->printVerboseDiscovery($runner->lastFileStats());
@@ -51,7 +55,7 @@ final class Application
         );
 
         $formatter = $this->resolveFormatter($format);
-        echo $formatter->format($offenses);
+        echo $formatter->format($offenses, ['inspected_files' => array_keys($inspectedFiles)]);
 
         return $offenses === [] ? 0 : 1;
     }

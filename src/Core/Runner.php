@@ -9,7 +9,11 @@ use PHPuboCop\Util\FileFinder;
 
 final class Runner
 {
+    /** @var list<string> */
+    private array $lastInspectedFiles = [];
+
     private array $lastFileStats = [
+        'source' => 'filesystem',
         'php_files_seen' => 0,
         'included' => 0,
         'excluded_by_config' => 0,
@@ -29,6 +33,7 @@ final class Runner
         $offenses = [];
         $discovery = $this->fileFinder->findWithStats($path, $config);
         $files = $discovery['files'];
+        $this->lastInspectedFiles = $files;
         $this->lastFileStats = $discovery['stats'];
 
         foreach ($files as $filePath) {
@@ -58,6 +63,12 @@ final class Runner
     public function lastFileStats(): array
     {
         return $this->lastFileStats;
+    }
+
+    /** @return list<string> */
+    public function lastInspectedFiles(): array
+    {
+        return $this->lastInspectedFiles;
     }
 
     private function isCopEnabled(string $copName, array $config, array $copConfig): bool

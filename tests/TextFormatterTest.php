@@ -26,7 +26,7 @@ final class TextFormatterTest extends TestCase
             $formatter = new TextFormatter();
             $output = $formatter->format([
                 new Offense('Layout/LineLength', $file, 2, 1, 'Line is too long.'),
-            ]);
+            ], ['inspected_files' => [$file]]);
         } finally {
             chdir($cwd);
         }
@@ -44,9 +44,28 @@ final class TextFormatterTest extends TestCase
         $formatter = new TextFormatter();
         $output = $formatter->format([
             new Offense('Layout/LineLength', $file, 2, 1, 'Line is too long.'),
-        ]);
+        ], ['inspected_files' => [$file]]);
 
         self::assertStringContainsString($file . ':2:1: convention: Line is too long. (Layout/LineLength)', $output);
     }
-}
 
+    public function testBuildsProgressSummaryLikeRuboCop(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_formatter_progress_' . uniqid('', true);
+        mkdir($dir, 0777, true);
+        $fileOne = $dir . '/one.php';
+        $fileTwo = $dir . '/two.php';
+        file_put_contents($fileOne, "<?php\n");
+        file_put_contents($fileTwo, "<?php\n");
+
+        putenv('NO_COLOR=1');
+        $formatter = new TextFormatter();
+        $output = $formatter->format([
+            new Offense('Layout/LineLength', $fileTwo, 2, 1, 'Line is too long.', 'warning'),
+        ], ['inspected_files' => [$fileOne, $fileTwo]]);
+        putenv('NO_COLOR');
+
+        self::assertStringContainsString(".W\n\n", $output);
+        self::assertStringContainsString('2 files inspected, 1 offense(s) detected in 1 file(s)', $output);
+    }
+}

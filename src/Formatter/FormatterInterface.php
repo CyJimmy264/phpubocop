@@ -9,5 +9,5 @@ use PHPuboCop\Core\Offense;
 interface FormatterInterface
 {
     /** @param list<Offense> $offenses */
-    public function format(array $offenses): string;
+    public function format(array $offenses, array $context = []): string;
 }
