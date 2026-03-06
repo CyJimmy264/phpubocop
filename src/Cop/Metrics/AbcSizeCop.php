@@ -13,6 +13,36 @@ use PhpParser\Node\Stmt;
 
 final class AbcSizeCop implements CopInterface
 {
+    private int $assignments = 0;
+    private int $branches = 0;
+    private int $conditions = 0;
+
+    /** @var list<class-string<Node>> */
+    private const CONDITION_NODES = [
+        Stmt\If_::class,
+        Stmt\ElseIf_::class,
+        Stmt\For_::class,
+        Stmt\Foreach_::class,
+        Stmt\While_::class,
+        Stmt\Do_::class,
+        Stmt\Case_::class,
+        Stmt\Catch_::class,
+        Expr\Ternary::class,
+        Expr\BinaryOp\BooleanAnd::class,
+        Expr\BinaryOp\BooleanOr::class,
+        Expr\BinaryOp\LogicalAnd::class,
+        Expr\BinaryOp\LogicalOr::class,
+        Expr\BinaryOp\Equal::class,
+        Expr\BinaryOp\NotEqual::class,
+        Expr\BinaryOp\Identical::class,
+        Expr\BinaryOp\NotIdentical::class,
+        Expr\BinaryOp\Smaller::class,
+        Expr\BinaryOp\SmallerOrEqual::class,
+        Expr\BinaryOp\Greater::class,
+        Expr\BinaryOp\GreaterOrEqual::class,
+        Expr\BinaryOp\Spaceship::class,
+    ];
+
     public function name(): string
     {
         return 'Metrics/AbcSize';
@@ -34,43 +64,42 @@ final class AbcSizeCop implements CopInterface
     private function collectOffenses(Node $node, SourceFile $file, float $max, array &$offenses): void
     {
         if ($this->isMeasuredScope($node)) {
-            [$a, $b, $c] = $this->calculateAbcVector($node);
-            $size = round(sqrt(($a ** 2) + ($b ** 2) + ($c ** 2)), 2);
-
-            if ($size > $max) {
-                $offenses[] = new Offense(
-                    $this->name(),
-                    $file->path,
-                    (int) $node->getStartLine(),
-                    1,
-                    sprintf(
-                        'Assignment Branch Condition size for %s is too high. [<%d, %d, %d> %.2f/%.2f]',
-                        $this->scopeName($node),
-                        $a,
-                        $b,
-                        $c,
-                        $size,
-                        $max,
-                    ),
-                );
-            }
+            $this->appendOffenseForScopeIfNeeded($node, $file, $max, $offenses);
         }
 
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $subNode = $node->{$subNodeName};
-            if ($subNode instanceof Node) {
-                $this->collectOffenses($subNode, $file, $max, $offenses);
-                continue;
-            }
-
-            if (is_array($subNode)) {
-                foreach ($subNode as $child) {
-                    if ($child instanceof Node) {
-                        $this->collectOffenses($child, $file, $max, $offenses);
-                    }
-                }
-            }
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->collectOffenses($child, $file, $max, $offenses);
         }
+    }
+
+    /** @param list<Offense> $offenses */
+    private function appendOffenseForScopeIfNeeded(
+        Node $scope,
+        SourceFile $file,
+        float $max,
+        array &$offenses,
+    ): void {
+        [$a, $b, $c] = $this->calculateAbcVector($scope);
+        $size = round(sqrt(($a ** 2) + ($b ** 2) + ($c ** 2)), 2);
+        if ($size <= $max) {
+            return;
+        }
+
+        $offenses[] = new Offense(
+            $this->name(),
+            $file->path,
+            (int) $scope->getStartLine(),
+            1,
+            sprintf(
+                'Assignment Branch Condition size for %s is too high. [<%d, %d, %d> %.2f/%.2f]',
+                $this->scopeName($scope),
+                $a,
+                $b,
+                $c,
+                $size,
+                $max,
+            ),
+        );
     }
 
     private function isMeasuredScope(Node $node): bool
@@ -81,47 +110,32 @@ final class AbcSizeCop implements CopInterface
     /** @return array{0:int,1:int,2:int} */
     private function calculateAbcVector(Node $scope): array
     {
-        $a = 0;
-        $b = 0;
-        $c = 0;
+        $this->assignments = 0;
+        $this->branches = 0;
+        $this->conditions = 0;
+        $this->visitScopeNode($scope, $scope);
+        return [$this->assignments, $this->branches, $this->conditions];
+    }
 
-        $visit = function (Node $node) use (&$visit, &$a, &$b, &$c, $scope): void {
-            if ($node !== $scope && $this->isMeasuredScope($node)) {
-                return;
-            }
+    private function visitScopeNode(Node $node, Node $scope): void
+    {
+        if ($node !== $scope && $this->isMeasuredScope($node)) {
+            return;
+        }
 
-            if ($this->isAssignment($node)) {
-                $a++;
-            }
+        if ($this->isAssignment($node)) {
+            $this->assignments++;
+        }
+        if ($this->isBranch($node)) {
+            $this->branches++;
+        }
+        if ($this->isCondition($node)) {
+            $this->conditions++;
+        }
 
-            if ($this->isBranch($node)) {
-                $b++;
-            }
-
-            if ($this->isCondition($node)) {
-                $c++;
-            }
-
-            foreach ($node->getSubNodeNames() as $subNodeName) {
-                $subNode = $node->{$subNodeName};
-
-                if ($subNode instanceof Node) {
-                    $visit($subNode);
-                    continue;
-                }
-
-                if (is_array($subNode)) {
-                    foreach ($subNode as $child) {
-                        if ($child instanceof Node) {
-                            $visit($child);
-                        }
-                    }
-                }
-            }
-        };
-
-        $visit($scope);
-        return [$a, $b, $c];
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->visitScopeNode($child, $scope);
+        }
     }
 
     private function isAssignment(Node $node): bool
@@ -141,28 +155,13 @@ final class AbcSizeCop implements CopInterface
 
     private function isCondition(Node $node): bool
     {
-        return $node instanceof Stmt\If_
-            || $node instanceof Stmt\ElseIf_
-            || $node instanceof Stmt\For_
-            || $node instanceof Stmt\Foreach_
-            || $node instanceof Stmt\While_
-            || $node instanceof Stmt\Do_
-            || $node instanceof Stmt\Case_
-            || $node instanceof Stmt\Catch_
-            || $node instanceof Expr\Ternary
-            || $node instanceof Expr\BinaryOp\BooleanAnd
-            || $node instanceof Expr\BinaryOp\BooleanOr
-            || $node instanceof Expr\BinaryOp\LogicalAnd
-            || $node instanceof Expr\BinaryOp\LogicalOr
-            || $node instanceof Expr\BinaryOp\Equal
-            || $node instanceof Expr\BinaryOp\NotEqual
-            || $node instanceof Expr\BinaryOp\Identical
-            || $node instanceof Expr\BinaryOp\NotIdentical
-            || $node instanceof Expr\BinaryOp\Smaller
-            || $node instanceof Expr\BinaryOp\SmallerOrEqual
-            || $node instanceof Expr\BinaryOp\Greater
-            || $node instanceof Expr\BinaryOp\GreaterOrEqual
-            || $node instanceof Expr\BinaryOp\Spaceship;
+        foreach (self::CONDITION_NODES as $conditionClass) {
+            if ($node instanceof $conditionClass) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function scopeName(Node $node): string
@@ -176,5 +175,36 @@ final class AbcSizeCop implements CopInterface
         }
 
         return 'anonymous';
+    }
+
+    /** @return list<Node> */
+    private function childNodesOf(Node $node): array
+    {
+        $children = [];
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $subNode = $node->{$subNodeName};
+            if ($subNode instanceof Node) {
+                $children[] = $subNode;
+                continue;
+            }
+            if (is_array($subNode)) {
+                $this->appendChildNodes($children, $subNode);
+            }
+        }
+
+        return $children;
+    }
+
+    /**
+     * @param list<Node> $children
+     * @param array<int,mixed> $subNode
+     */
+    private function appendChildNodes(array &$children, array $subNode): void
+    {
+        foreach ($subNode as $child) {
+            if ($child instanceof Node) {
+                $children[] = $child;
+            }
+        }
     }
 }
