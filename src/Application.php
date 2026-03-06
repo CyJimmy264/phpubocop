@@ -63,17 +63,9 @@ final class Application
         $resolvedConfig = $this->resolveConfigPathForTarget($path, $context['configPath']);
         $config = $context['configLoader']->load($resolvedConfig['path']);
 
-        if ($context['autocorrect']) {
-            (new Autocorrector($context['cops']))->run([$path], $config, $context['autocorrectAll']);
-        }
-
-        if ($context['verbose']) {
-            $this->printVerboseConfig($path, $resolvedConfig, $config);
-        }
-
-        foreach ($context['runner']->run($path, $config) as $offense) {
-            $offenses[] = $offense;
-        }
+        $this->runAutocorrectIfEnabled($path, $config, $context);
+        $this->printVerboseConfigIfEnabled($path, $resolvedConfig, $config, $context['verbose']);
+        $this->collectOffensesFromRunner($context['runner'], $path, $config, $offenses);
 
         $this->collectInspectedFiles($context['runner']->lastInspectedFiles(), $inspectedFiles);
 
@@ -95,7 +87,10 @@ final class Application
     {
         usort(
             $offenses,
-            static fn (Offense $a, Offense $b): int => [$a->file, $a->line, $a->column, $a->copName] <=> [$b->file, $b->line, $b->column, $b->copName],
+            static fn (Offense $a, Offense $b): int =>
+                [$a->file, $a->line, $a->column, $a->copName]
+                <=>
+                [$b->file, $b->line, $b->column, $b->copName],
         );
 
         $formatter = $this->resolveFormatter($format);
@@ -147,7 +142,16 @@ final class Application
         return $arg === '--help' || $arg === '-h';
     }
 
-    /** @param array{paths:list<string>,configPath:?string,format:string,autocorrect:bool,autocorrectAll:bool,verbose:bool} $state */
+    /**
+     * @param array{
+     *   paths:list<string>,
+     *   configPath:?string,
+     *   format:string,
+     *   autocorrect:bool,
+     *   autocorrectAll:bool,
+     *   verbose:bool
+     * } $state
+     */
     private function consumeArg(string $arg, array $argv, int &$i, array &$state): void
     {
         if ($this->consumeConfigArg($arg, $argv, $i, $state)) {
@@ -224,6 +228,57 @@ final class Application
             return ['path' => $explicitConfigPath, 'source' => 'explicit'];
         }
 
+        $targetConfig = $this->findTargetConfigPath($targetPath);
+        if ($targetConfig !== null) {
+            return $targetConfig;
+        }
+
+        if (is_file('.phpubocop.yml')) {
+            return ['path' => '.phpubocop.yml', 'source' => 'current_working_directory'];
+        }
+
+        return ['path' => null, 'source' => 'defaults'];
+    }
+
+    /** @param array<string,mixed> $config */
+    private function runAutocorrectIfEnabled(string $path, array $config, array $context): void
+    {
+        if (!$context['autocorrect']) {
+            return;
+        }
+
+        (new Autocorrector($context['cops']))->run([$path], $config, $context['autocorrectAll']);
+    }
+
+    /** @param array<string,mixed> $resolvedConfig @param array<string,mixed> $config */
+    private function printVerboseConfigIfEnabled(
+        string $path,
+        array $resolvedConfig,
+        array $config,
+        bool $verbose,
+    ): void {
+        if (!$verbose) {
+            return;
+        }
+
+        $this->printVerboseConfig($path, $resolvedConfig, $config);
+    }
+
+    /** @param array<string,mixed> $config @param list<Offense> $offenses */
+    private function collectOffensesFromRunner(
+        Runner $runner,
+        string $path,
+        array $config,
+        array &$offenses,
+    ): void {
+        foreach ($runner->run($path, $config) as $offense) {
+            $offenses[] = $offense;
+        }
+    }
+
+    /** @return array{path:string,source:string}|null */
+    private function findTargetConfigPath(string $targetPath): ?array
+    {
         if (is_dir($targetPath)) {
             $candidate = rtrim($targetPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.phpubocop.yml';
             if (is_file($candidate)) {
@@ -238,11 +293,7 @@ final class Application
             }
         }
 
-        if (is_file('.phpubocop.yml')) {
-            return ['path' => '.phpubocop.yml', 'source' => 'current_working_directory'];
-        }
-
-        return ['path' => null, 'source' => 'defaults'];
+        return null;
     }
 
     private function resolveFormatter(string $format): FormatterInterface
