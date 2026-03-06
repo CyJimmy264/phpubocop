@@ -15,7 +15,10 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\ArrayItem;
 
-final class TrailingCommaInMultilineCop implements CopInterface, AutocorrectableCopInterface, SafeAutocorrectableCopInterface
+final class TrailingCommaInMultilineCop implements
+    CopInterface,
+    AutocorrectableCopInterface,
+    SafeAutocorrectableCopInterface
 {
     public function name(): string
     {
@@ -41,24 +44,12 @@ final class TrailingCommaInMultilineCop implements CopInterface, Autocorrectable
 
     public function autocorrect(SourceFile $file, array $config = []): string
     {
-        $positions = [];
-        foreach ($this->collectMissingTrailingComma($file) as $missing) {
-            $positions[$missing['insert_pos']] = true;
-        }
-
+        $positions = $this->missingInsertPositions($file);
         if ($positions === []) {
             return $file->content;
         }
 
-        $content = $file->content;
-        $offsets = array_keys($positions);
-        rsort($offsets, SORT_NUMERIC);
-
-        foreach ($offsets as $offset) {
-            $content = substr($content, 0, $offset) . ',' . substr($content, $offset);
-        }
-
-        return $content;
+        return $this->insertCommasAtPositions($file->content, $positions);
     }
 
     /** @return list<array{insert_pos:int,line:int}> */
@@ -72,19 +63,15 @@ final class TrailingCommaInMultilineCop implements CopInterface, Autocorrectable
                 return;
             }
 
-            if ($node instanceof Expr\FuncCall
-                || $node instanceof Expr\MethodCall
-                || $node instanceof Expr\StaticCall
-                || $node instanceof Expr\New_
-                || $node instanceof Expr\NullsafeMethodCall) {
-                $args = $node->args;
-                if (is_array($args)) {
-                    $this->checkList($file, $args, $node, $missing);
-                }
+            if ($this->isCallLikeNode($node)) {
+                $this->checkCallLikeList($file, $node, $missing);
             }
         });
 
-        usort($missing, static fn (array $a, array $b): int => [$a['line'], $a['insert_pos']] <=> [$b['line'], $b['insert_pos']]);
+        usort(
+            $missing,
+            static fn (array $a, array $b): int => [$a['line'], $a['insert_pos']] <=> [$b['line'], $b['insert_pos']],
+        );
         return $missing;
     }
 
@@ -94,47 +81,144 @@ final class TrailingCommaInMultilineCop implements CopInterface, Autocorrectable
      */
     private function checkList(SourceFile $file, array $items, Node $container, array &$missing): void
     {
+        $context = $this->buildListCheckContext($items, $container);
+        if ($context === null) {
+            return;
+        }
+
+        [$last, $positions] = $context;
+        $between = $this->contentBetweenPositions($file->content, $positions);
+        if ($between === null || $this->hasTrailingComma($between)) {
+            return;
+        }
+
+        $missing[] = $this->missingEntryFromPositions($positions, (int) $last->getEndLine());
+    }
+
+    /** @param array<int, ArrayItem|Arg|null> $items @return array{0:Node,1:Node}|null */
+    private function firstAndLastNode(array $items): ?array
+    {
         $nonNull = array_values(array_filter($items, static fn ($item): bool => $item !== null));
         if ($nonNull === []) {
-            return;
+            return null;
         }
 
         $first = $nonNull[0];
         $last = $nonNull[count($nonNull) - 1];
-
         if (!$first instanceof Node || !$last instanceof Node) {
-            return;
+            return null;
         }
 
+        return [$first, $last];
+    }
+
+    /** @param array<int, ArrayItem|Arg|null> $items @return array{0:Node,1:array{0:int,1:int}}|null */
+    private function buildListCheckContext(array $items, Node $container): ?array
+    {
+        $firstAndLast = $this->firstAndLastNode($items);
+        if ($firstAndLast === null) {
+            return null;
+        }
+
+        [$first, $last] = $firstAndLast;
+        if ($this->shouldSkipContainer($first, $last, $container)) {
+            return null;
+        }
+
+        $positions = $this->extractBoundaryPositions($last, $container);
+        if ($positions === null) {
+            return null;
+        }
+
+        return [$last, $positions];
+    }
+
+    private function shouldSkipContainer(Node $first, Node $last, Node $container): bool
+    {
         $containerEndLine = (int) $container->getEndLine();
         if ((int) $first->getStartLine() >= $containerEndLine) {
-            return;
+            return true;
         }
 
         // Do not enforce trailing comma when closing delimiter is on the same
         // line as the last item: avoids awkward forms like "],)->call()".
-        if ((int) $last->getEndLine() === $containerEndLine) {
-            return;
-        }
+        return (int) $last->getEndLine() === $containerEndLine;
+    }
 
+    /** @return array{0:int,1:int}|null */
+    private function extractBoundaryPositions(Node $last, Node $container): ?array
+    {
         $lastEnd = $last->getEndFilePos();
         $containerEnd = $container->getEndFilePos();
-        if (!is_int($lastEnd) || !is_int($containerEnd) || $containerEnd <= $lastEnd) {
+        if (!is_int($lastEnd) || !is_int($containerEnd)) {
+            return null;
+        }
+        if ($containerEnd <= $lastEnd) {
+            return null;
+        }
+
+        return [$lastEnd, $containerEnd];
+    }
+
+    /** @param list<array{insert_pos:int,line:int}> $missing */
+    private function checkCallLikeList(SourceFile $file, Node $node, array &$missing): void
+    {
+        $args = $node->args;
+        if (!is_array($args)) {
             return;
         }
 
-        $between = substr($file->content, $lastEnd + 1, $containerEnd - $lastEnd);
-        if ($between === false) {
-            return;
+        $this->checkList($file, $args, $node, $missing);
+    }
+
+    private function isCallLikeNode(Node $node): bool
+    {
+        return $node instanceof Expr\FuncCall
+            || $node instanceof Expr\MethodCall
+            || $node instanceof Expr\StaticCall
+            || $node instanceof Expr\New_
+            || $node instanceof Expr\NullsafeMethodCall;
+    }
+
+    /** @return array<int,true> */
+    private function missingInsertPositions(SourceFile $file): array
+    {
+        $positions = [];
+        foreach ($this->collectMissingTrailingComma($file) as $missing) {
+            $positions[$missing['insert_pos']] = true;
         }
 
-        if ($this->hasTrailingComma($between)) {
-            return;
+        return $positions;
+    }
+
+    /** @param array<int,true> $positions */
+    private function insertCommasAtPositions(string $content, array $positions): string
+    {
+        $offsets = array_keys($positions);
+        rsort($offsets, SORT_NUMERIC);
+
+        foreach ($offsets as $offset) {
+            $content = substr($content, 0, $offset) . ',' . substr($content, $offset);
         }
 
-        $missing[] = [
+        return $content;
+    }
+
+    /** @param array{0:int,1:int} $positions */
+    private function contentBetweenPositions(string $content, array $positions): ?string
+    {
+        [$lastEnd, $containerEnd] = $positions;
+        $between = substr($content, $lastEnd + 1, $containerEnd - $lastEnd);
+        return is_string($between) ? $between : null;
+    }
+
+    /** @param array{0:int,1:int} $positions @return array{insert_pos:int,line:int} */
+    private function missingEntryFromPositions(array $positions, int $line): array
+    {
+        [$lastEnd] = $positions;
+        return [
             'insert_pos' => $lastEnd + 1,
-            'line' => (int) $last->getEndLine(),
+            'line' => $line,
         ];
     }
 
