@@ -57,7 +57,7 @@ PHP,
         self::assertCount(0, $offenses);
     }
 
-    public function testDoesNotReportConstructorByDefault(): void
+    public function testReportsTooManyConstructorParameters(): void
     {
         $cop = new ParameterListsCop();
         $source = new SourceFile('foo.php', <<<'PHP'
@@ -70,6 +70,6 @@ PHP,
 
         $offenses = $cop->inspect($source, ['Max' => 5]);
 
-        self::assertCount(0, $offenses);
+        self::assertCount(1, $offenses);
     }
 }

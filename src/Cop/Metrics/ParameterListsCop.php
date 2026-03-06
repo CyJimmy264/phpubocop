@@ -50,10 +50,6 @@ final class ParameterListsCop implements CopInterface
         int $max,
         array &$offenses,
     ): void {
-        if ($this->isExcludedMethod($scope)) {
-            return;
-        }
-
         $count = $this->parameterCount($scope);
         if ($count <= $max) {
             return;
@@ -73,15 +69,6 @@ final class ParameterListsCop implements CopInterface
     private function parameterCount(FunctionLike $node): int
     {
         return count($node->getParams());
-    }
-
-    private function isExcludedMethod(FunctionLike $scope): bool
-    {
-        if (!$scope instanceof Stmt\ClassMethod) {
-            return false;
-        }
-
-        return strtolower($scope->name->toString()) === '__construct';
     }
 
     private function newOffense(SourceFile $file, FunctionLike $scope, int $count, int $max): Offense
