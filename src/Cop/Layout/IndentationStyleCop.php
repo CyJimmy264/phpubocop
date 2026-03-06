@@ -19,77 +19,24 @@ final class IndentationStyleCop implements CopInterface, AutocorrectableCopInter
 
     public function inspect(SourceFile $file, array $config = []): array
     {
-        $style = strtolower((string) ($config['Style'] ?? 'spaces'));
-        if ($style !== 'spaces') {
+        if (!$this->isSpacesStyle($config)) {
             return [];
         }
 
         $ignoredLines = $this->ignoredIndentationLines($file->content);
-        $offenses = [];
-
-        foreach ($file->lines() as $index => $line) {
-            $lineNumber = $index + 1;
-            if (isset($ignoredLines[$lineNumber])) {
-                continue;
-            }
-
-            if (preg_match('/^[ \t]+/', $line, $matches) !== 1) {
-                continue;
-            }
-
-            $indent = $matches[0];
-            $tabPos = strpos($indent, "\t");
-            if ($tabPos === false) {
-                continue;
-            }
-
-            $offenses[] = new Offense(
-                $this->name(),
-                $file->path,
-                $lineNumber,
-                $tabPos + 1,
-                'Use spaces for indentation; tabs are not allowed.',
-            );
-        }
-
-        return $offenses;
+        return $this->collectTabIndentOffenses($file, $ignoredLines);
     }
 
     public function autocorrect(SourceFile $file, array $config = []): string
     {
-        $style = strtolower((string) ($config['Style'] ?? 'spaces'));
-        if ($style !== 'spaces') {
+        if (!$this->isSpacesStyle($config)) {
             return $file->content;
         }
 
-        $tabWidth = (int) ($config['TabWidth'] ?? 4);
-        if ($tabWidth < 1) {
-            $tabWidth = 4;
-        }
-
+        $tabWidth = $this->tabWidth($config);
         $ignoredLines = $this->ignoredIndentationLines($file->content);
         $lines = explode("\n", $file->content);
-
-        foreach ($lines as $index => $line) {
-            $lineNumber = $index + 1;
-            if (isset($ignoredLines[$lineNumber])) {
-                continue;
-            }
-
-            if (preg_match('/^[ \t]+/', $line, $matches) !== 1) {
-                continue;
-            }
-
-            $indent = $matches[0];
-            if (!str_contains($indent, "\t")) {
-                continue;
-            }
-
-            $fixedIndent = str_replace("\t", str_repeat(' ', $tabWidth), $indent);
-            $lines[$index] = $fixedIndent . substr($line, strlen($indent));
-        }
-
-        return implode("\n", $lines);
+        return $this->autocorrectLines($lines, $ignoredLines, $tabWidth);
     }
 
     /** @return array<int,true> */
@@ -99,25 +46,134 @@ final class IndentationStyleCop implements CopInterface, AutocorrectableCopInter
         $heredocStartLine = null;
 
         foreach (token_get_all($content) as $token) {
-            if (!is_array($token)) {
-                continue;
-            }
-
-            [$tokenId, , $line] = $token;
-
-            if ($tokenId === T_START_HEREDOC) {
-                $heredocStartLine = $line;
-                continue;
-            }
-
-            if ($tokenId === T_END_HEREDOC && $heredocStartLine !== null) {
-                for ($i = $heredocStartLine + 1; $i < $line; $i++) {
-                    $ignored[$i] = true;
-                }
-                $heredocStartLine = null;
-            }
+            $heredocStartLine = $this->processIndentationToken($token, $ignored, $heredocStartLine);
         }
 
         return $ignored;
+    }
+
+    /** @param array<int,true> $ignoredLines @return list<Offense> */
+    private function collectTabIndentOffenses(SourceFile $file, array $ignoredLines): array
+    {
+        $offenses = [];
+        foreach ($file->lines() as $index => $line) {
+            $lineNumber = $index + 1;
+            if ($this->isIgnoredLine($ignoredLines, $lineNumber)) {
+                continue;
+            }
+
+            $tabColumn = $this->tabIndentColumn($line);
+            if ($tabColumn !== null) {
+                $offenses[] = $this->tabIndentOffense($file, $lineNumber, $tabColumn);
+            }
+        }
+
+        return $offenses;
+    }
+
+    /**
+     * @param list<string> $lines
+     * @param array<int,true> $ignoredLines
+     */
+    private function autocorrectLines(array $lines, array $ignoredLines, int $tabWidth): string
+    {
+        foreach ($lines as $index => $line) {
+            $lineNumber = $index + 1;
+            if ($this->isIgnoredLine($ignoredLines, $lineNumber)) {
+                continue;
+            }
+
+            $indent = $this->leadingIndent($line);
+            if ($indent !== null && str_contains($indent, "\t")) {
+                $lines[$index] = $this->replaceIndentTabs($line, $indent, $tabWidth);
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function isSpacesStyle(array $config): bool
+    {
+        return strtolower((string) ($config['Style'] ?? 'spaces')) === 'spaces';
+    }
+
+    private function tabWidth(array $config): int
+    {
+        $tabWidth = (int) ($config['TabWidth'] ?? 4);
+        return $tabWidth < 1 ? 4 : $tabWidth;
+    }
+
+    private function leadingIndent(string $line): ?string
+    {
+        if (preg_match('/^[ \t]+/', $line, $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[0];
+    }
+
+    /** @param array<int,true> $ignoredLines */
+    private function isIgnoredLine(array $ignoredLines, int $lineNumber): bool
+    {
+        return isset($ignoredLines[$lineNumber]);
+    }
+
+    private function tabIndentColumn(string $line): ?int
+    {
+        $indent = $this->leadingIndent($line);
+        if ($indent === null) {
+            return null;
+        }
+
+        $tabPos = strpos($indent, "\t");
+        return $tabPos === false ? null : $tabPos + 1;
+    }
+
+    private function tabIndentOffense(SourceFile $file, int $lineNumber, int $column): Offense
+    {
+        return new Offense(
+            $this->name(),
+            $file->path,
+            $lineNumber,
+            $column,
+            'Use spaces for indentation; tabs are not allowed.',
+        );
+    }
+
+    private function replaceIndentTabs(string $line, string $indent, int $tabWidth): string
+    {
+        $fixedIndent = str_replace("\t", str_repeat(' ', $tabWidth), $indent);
+        return $fixedIndent . substr($line, strlen($indent));
+    }
+
+    /** @param array<int,true> $ignored */
+    private function markHeredocBodyLines(array &$ignored, ?int $heredocStartLine, int $endLine): void
+    {
+        if ($heredocStartLine === null) {
+            return;
+        }
+
+        for ($line = $heredocStartLine + 1; $line < $endLine; $line++) {
+            $ignored[$line] = true;
+        }
+    }
+
+    /** @param array<int,true> $ignored */
+    private function processIndentationToken(mixed $token, array &$ignored, ?int $heredocStartLine): ?int
+    {
+        if (!is_array($token)) {
+            return $heredocStartLine;
+        }
+
+        [$tokenId, , $line] = $token;
+        if ($tokenId === T_START_HEREDOC) {
+            return $line;
+        }
+        if ($tokenId === T_END_HEREDOC) {
+            $this->markHeredocBodyLines($ignored, $heredocStartLine, $line);
+            return null;
+        }
+
+        return $heredocStartLine;
     }
 }
