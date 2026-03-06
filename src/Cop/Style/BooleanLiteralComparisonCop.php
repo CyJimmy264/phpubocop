@@ -31,6 +31,22 @@ final class BooleanLiteralComparisonCop implements CopInterface
         'strrpos',
         'strripos',
     ];
+    /** @var list<class-string<Node>> */
+    private const BOOLEAN_OPERATOR_NODES = [
+        Expr\BinaryOp\BooleanAnd::class,
+        Expr\BinaryOp\BooleanOr::class,
+        Expr\BinaryOp\LogicalAnd::class,
+        Expr\BinaryOp\LogicalOr::class,
+        Expr\BinaryOp\Equal::class,
+        Expr\BinaryOp\NotEqual::class,
+        Expr\BinaryOp\Identical::class,
+        Expr\BinaryOp\NotIdentical::class,
+        Expr\BinaryOp\Smaller::class,
+        Expr\BinaryOp\SmallerOrEqual::class,
+        Expr\BinaryOp\Greater::class,
+        Expr\BinaryOp\GreaterOrEqual::class,
+        Expr\BinaryOp\Spaceship::class,
+    ];
 
     public function name(): string
     {
@@ -53,58 +69,86 @@ final class BooleanLiteralComparisonCop implements CopInterface
     private function walk(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): void
     {
         if ($this->isScope($node)) {
-            $scopeVars = $falseableVars;
-            $this->walkChildren($node, $file, $offenses, $scopeVars);
+            $this->walkScopeNode($node, $file, $offenses, $falseableVars);
             return;
         }
-
-        if ($node instanceof Expr\Assign && $node->var instanceof Expr\Variable && is_string($node->var->name)) {
-            $name = $node->var->name;
-            if ($this->isFalseableExpression($node->expr, $falseableVars)) {
-                $falseableVars[$name] = true;
-            } else {
-                unset($falseableVars[$name]);
-            }
-
-            $this->walk($node->expr, $file, $offenses, $falseableVars);
+        if ($this->handleAssignNode($node, $file, $offenses, $falseableVars)) {
             return;
         }
-
-        if ($node instanceof Expr\AssignOp || $node instanceof Expr\AssignRef) {
-            if ($node->var instanceof Expr\Variable && is_string($node->var->name)) {
-                unset($falseableVars[$node->var->name]);
-            }
-
-            if ($node instanceof Expr\AssignOp) {
-                $this->walk($node->expr, $file, $offenses, $falseableVars);
-            } else {
-                $this->walk($node->expr, $file, $offenses, $falseableVars);
-            }
+        if ($this->handleAssignOpLikeNode($node, $file, $offenses, $falseableVars)) {
             return;
         }
-
-        if ($this->isBooleanComparison($node)) {
-            [$literalBool, $otherSide] = $this->extractBooleanComparison($node);
-            if ($literalBool === false && $this->isFalseableExpression($otherSide, $falseableVars)) {
-                $this->walkChildren($node, $file, $offenses, $falseableVars);
-                return;
-            }
-
-            if (!$this->isObviouslyBooleanExpression($otherSide)) {
-                $this->walkChildren($node, $file, $offenses, $falseableVars);
-                return;
-            }
-
-            $offenses[] = new Offense(
-                $this->name(),
-                $file->path,
-                (int) $node->getStartLine(),
-                1,
-                'Avoid comparing to boolean literals; simplify the condition.',
-            );
+        if ($this->shouldReportBooleanLiteralComparison($node, $falseableVars)) {
+            $this->appendComparisonOffense($node, $file, $offenses);
         }
 
         $this->walkChildren($node, $file, $offenses, $falseableVars);
+    }
+
+    /** @param list<Offense> $offenses */
+    private function walkScopeNode(Node $node, SourceFile $file, array &$offenses, array $falseableVars): void
+    {
+        $scopeVars = $falseableVars;
+        $this->walkChildren($node, $file, $offenses, $scopeVars);
+    }
+
+    /** @param list<Offense> $offenses */
+    private function handleAssignNode(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): bool
+    {
+        if (!$node instanceof Expr\Assign || !$node->var instanceof Expr\Variable || !is_string($node->var->name)) {
+            return false;
+        }
+
+        $name = $node->var->name;
+        if ($this->isFalseableExpression($node->expr, $falseableVars)) {
+            $falseableVars[$name] = true;
+        } else {
+            unset($falseableVars[$name]);
+        }
+
+        $this->walk($node->expr, $file, $offenses, $falseableVars);
+        return true;
+    }
+
+    /** @param list<Offense> $offenses */
+    private function handleAssignOpLikeNode(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): bool
+    {
+        if (!$node instanceof Expr\AssignOp && !$node instanceof Expr\AssignRef) {
+            return false;
+        }
+
+        if ($node->var instanceof Expr\Variable && is_string($node->var->name)) {
+            unset($falseableVars[$node->var->name]);
+        }
+
+        $this->walk($node->expr, $file, $offenses, $falseableVars);
+        return true;
+    }
+
+    private function shouldReportBooleanLiteralComparison(Node $node, array $falseableVars): bool
+    {
+        if (!$this->isBooleanComparison($node)) {
+            return false;
+        }
+
+        [$literalBool, $otherSide] = $this->extractBooleanComparison($node);
+        if ($literalBool === false && $this->isFalseableExpression($otherSide, $falseableVars)) {
+            return false;
+        }
+
+        return $this->isObviouslyBooleanExpression($otherSide);
+    }
+
+    /** @param list<Offense> $offenses */
+    private function appendComparisonOffense(Node $node, SourceFile $file, array &$offenses): void
+    {
+        $offenses[] = new Offense(
+            $this->name(),
+            $file->path,
+            (int) $node->getStartLine(),
+            1,
+            'Avoid comparing to boolean literals; simplify the condition.',
+        );
     }
 
     /** @param list<Offense> $offenses */
@@ -183,60 +227,105 @@ final class BooleanLiteralComparisonCop implements CopInterface
 
     private function isObviouslyBooleanExpression(Node $expr): bool
     {
-        if ($expr instanceof Expr\ConstFetch) {
-            $name = strtolower($expr->name->toString());
-            return $name === 'true' || $name === 'false';
+        return $this->isBooleanLiteralExpression($expr)
+            || $this->isIntrinsicBooleanExpression($expr)
+            || $this->isBooleanOperatorExpression($expr)
+            || $this->isBooleanLikeNamedExpression($expr);
+    }
+
+    private function isBooleanLiteralExpression(Node $expr): bool
+    {
+        if (!$expr instanceof Expr\ConstFetch) {
+            return false;
         }
 
-        if ($expr instanceof Expr\BooleanNot
+        $name = strtolower($expr->name->toString());
+        return $name === 'true' || $name === 'false';
+    }
+
+    private function isIntrinsicBooleanExpression(Node $expr): bool
+    {
+        return $expr instanceof Expr\BooleanNot
             || $expr instanceof Expr\Empty_
             || $expr instanceof Expr\Isset_
-            || $expr instanceof Expr\Instanceof_) {
-            return true;
-        }
+            || $expr instanceof Expr\Instanceof_;
+    }
 
-        if ($expr instanceof Expr\BinaryOp\BooleanAnd
-            || $expr instanceof Expr\BinaryOp\BooleanOr
-            || $expr instanceof Expr\BinaryOp\LogicalAnd
-            || $expr instanceof Expr\BinaryOp\LogicalOr
-            || $expr instanceof Expr\BinaryOp\Equal
-            || $expr instanceof Expr\BinaryOp\NotEqual
-            || $expr instanceof Expr\BinaryOp\Identical
-            || $expr instanceof Expr\BinaryOp\NotIdentical
-            || $expr instanceof Expr\BinaryOp\Smaller
-            || $expr instanceof Expr\BinaryOp\SmallerOrEqual
-            || $expr instanceof Expr\BinaryOp\Greater
-            || $expr instanceof Expr\BinaryOp\GreaterOrEqual
-            || $expr instanceof Expr\BinaryOp\Spaceship) {
-            return true;
-        }
-
-        if ($expr instanceof Expr\Variable && is_string($expr->name)) {
-            return $this->isBooleanLikeName($expr->name);
-        }
-
-        if ($expr instanceof Expr\PropertyFetch && $expr->name instanceof Node\Identifier) {
-            return $this->isBooleanLikeName($expr->name->toString());
-        }
-
-        if ($expr instanceof Expr\StaticPropertyFetch && $expr->name instanceof Node\VarLikeIdentifier) {
-            return $this->isBooleanLikeName($expr->name->toString());
-        }
-
-        if ($expr instanceof Expr\FuncCall && $expr->name instanceof Node\Name) {
-            return $this->isBooleanLikeName($expr->name->toString());
-        }
-
-        if (($expr instanceof Expr\MethodCall || $expr instanceof Expr\NullsafeMethodCall)
-            && $expr->name instanceof Node\Identifier) {
-            return $this->isBooleanLikeName($expr->name->toString());
-        }
-
-        if ($expr instanceof Expr\StaticCall && $expr->name instanceof Node\Identifier) {
-            return $this->isBooleanLikeName($expr->name->toString());
+    private function isBooleanOperatorExpression(Node $expr): bool
+    {
+        foreach (self::BOOLEAN_OPERATOR_NODES as $booleanOperatorClass) {
+            if ($expr instanceof $booleanOperatorClass) {
+                return true;
+            }
         }
 
         return false;
+    }
+
+    private function isBooleanLikeNamedExpression(Node $expr): bool
+    {
+        $name = $this->extractNameFromExpression($expr);
+        if ($name === null) {
+            return false;
+        }
+
+        return $this->isBooleanLikeName($name);
+    }
+
+    private function extractNameFromExpression(Node $expr): ?string
+    {
+        return $this->extractVariableLikeName($expr)
+            ?? $this->extractPropertyLikeName($expr)
+            ?? $this->extractCallLikeName($expr);
+    }
+
+    private function extractVariableLikeName(Node $expr): ?string
+    {
+        if ($expr instanceof Expr\Variable && is_string($expr->name)) {
+            return $expr->name;
+        }
+
+        return null;
+    }
+
+    private function extractPropertyLikeName(Node $expr): ?string
+    {
+        if ($expr instanceof Expr\PropertyFetch && $expr->name instanceof Node\Identifier) {
+            return $expr->name->toString();
+        }
+        if ($expr instanceof Expr\StaticPropertyFetch && $expr->name instanceof Node\VarLikeIdentifier) {
+            return $expr->name->toString();
+        }
+
+        return null;
+    }
+
+    private function extractCallLikeName(Node $expr): ?string
+    {
+        if ($expr instanceof Expr\FuncCall && $expr->name instanceof Node\Name) {
+            return $expr->name->toString();
+        }
+
+        return $this->extractMethodLikeName($expr) ?? $this->extractStaticCallName($expr);
+    }
+
+    private function extractMethodLikeName(Node $expr): ?string
+    {
+        if (($expr instanceof Expr\MethodCall || $expr instanceof Expr\NullsafeMethodCall)
+            && $expr->name instanceof Node\Identifier) {
+            return $expr->name->toString();
+        }
+
+        return null;
+    }
+
+    private function extractStaticCallName(Node $expr): ?string
+    {
+        if ($expr instanceof Expr\StaticCall && $expr->name instanceof Node\Identifier) {
+            return $expr->name->toString();
+        }
+
+        return null;
     }
 
     private function isBooleanLikeName(string $name): bool
