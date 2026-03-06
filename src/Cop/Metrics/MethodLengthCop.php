@@ -14,6 +14,13 @@ use PhpParser\Node\Stmt;
 
 final class MethodLengthCop implements CopInterface
 {
+    private int $scopeStartLine = 0;
+    private int $scopeEndLine = 0;
+    /** @var array<string,bool> */
+    private array $countAsOneOptions = [];
+    /** @var array<int,bool> */
+    private array $foldedLines = [];
+
     public function name(): string
     {
         return 'Metrics/MethodLength';
@@ -36,34 +43,34 @@ final class MethodLengthCop implements CopInterface
     private function collectOffenses(Node $node, SourceFile $file, int $max, array $countAsOne, array &$offenses): void
     {
         if ($this->isMeasuredScope($node)) {
-            $length = $this->scopeLength($node, $countAsOne);
-            if ($length > $max) {
-                $offenses[] = new Offense(
-                    $this->name(),
-                    $file->path,
-                    (int) $node->getStartLine(),
-                    1,
-                    sprintf('Method has too many lines. [%d/%d]', $length, $max),
-                );
-            }
+            $this->appendOffenseForScopeIfNeeded($node, $file, $max, $countAsOne, $offenses);
         }
 
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $subNode = $node->{$subNodeName};
-
-            if ($subNode instanceof Node) {
-                $this->collectOffenses($subNode, $file, $max, $countAsOne, $offenses);
-                continue;
-            }
-
-            if (is_array($subNode)) {
-                foreach ($subNode as $child) {
-                    if ($child instanceof Node) {
-                        $this->collectOffenses($child, $file, $max, $countAsOne, $offenses);
-                    }
-                }
-            }
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->collectOffenses($child, $file, $max, $countAsOne, $offenses);
         }
+    }
+
+    /** @param list<Offense> $offenses */
+    private function appendOffenseForScopeIfNeeded(
+        Node $scope,
+        SourceFile $file,
+        int $max,
+        array $countAsOne,
+        array &$offenses,
+    ): void {
+        $length = $this->scopeLength($scope, $countAsOne);
+        if ($length <= $max) {
+            return;
+        }
+
+        $offenses[] = new Offense(
+            $this->name(),
+            $file->path,
+            (int) $scope->getStartLine(),
+            1,
+            sprintf('Method has too many lines. [%d/%d]', $length, $max),
+        );
     }
 
     private function isMeasuredScope(Node $node): bool
@@ -75,73 +82,83 @@ final class MethodLengthCop implements CopInterface
 
     private function scopeLength(Node $node, array $countAsOne): int
     {
-        $start = (int) $node->getStartLine();
-        $end = (int) $node->getEndLine();
-
-        if ($end < $start) {
+        $this->scopeStartLine = (int) $node->getStartLine();
+        $this->scopeEndLine = (int) $node->getEndLine();
+        if ($this->scopeEndLine < $this->scopeStartLine) {
             return 0;
         }
 
-        $baseLength = $end - $start + 1;
-        if ($countAsOne === []) {
+        $baseLength = $this->scopeEndLine - $this->scopeStartLine + 1;
+        $this->countAsOneOptions = $countAsOne;
+        if ($this->countAsOneOptions === []) {
             return $baseLength;
         }
 
-        $foldedLines = [];
-        $visit = function (Node $current) use (&$visit, &$foldedLines, $countAsOne, $start, $end): void {
-            if ($this->shouldCountAsOne($current, $countAsOne)) {
-                $nodeStart = max((int) $current->getStartLine(), $start);
-                $nodeEnd = min((int) $current->getEndLine(), $end);
-                for ($line = $nodeStart + 1; $line <= $nodeEnd; $line++) {
-                    $foldedLines[$line] = true;
-                }
-            }
-
-            foreach ($current->getSubNodeNames() as $subNodeName) {
-                $subNode = $current->{$subNodeName};
-                if ($subNode instanceof Node) {
-                    $visit($subNode);
-                    continue;
-                }
-
-                if (is_array($subNode)) {
-                    foreach ($subNode as $child) {
-                        if ($child instanceof Node) {
-                            $visit($child);
-                        }
-                    }
-                }
-            }
-        };
-
-        $visit($node);
-        return max(0, $baseLength - count($foldedLines));
+        $this->foldedLines = [];
+        $this->collectFoldedLines($node);
+        return max(0, $baseLength - count($this->foldedLines));
     }
 
-    private function shouldCountAsOne(Node $node, array $countAsOne): bool
+    private function collectFoldedLines(Node $node): void
     {
-        if ($countAsOne['array'] ?? false) {
-            if ($node instanceof Expr\Array_) {
-                return true;
-            }
+        if ($this->shouldCountAsOne($node)) {
+            $this->markFoldedLineRange($node);
         }
 
-        if (($countAsOne['heredoc'] ?? false) && $node instanceof String_) {
-            $kind = $node->getAttribute('kind');
-            if ($kind === String_::KIND_HEREDOC || $kind === String_::KIND_NOWDOC) {
-                return true;
-            }
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->collectFoldedLines($child);
+        }
+    }
+
+    private function markFoldedLineRange(Node $node): void
+    {
+        $nodeStart = max((int) $node->getStartLine(), $this->scopeStartLine);
+        $nodeEnd = min((int) $node->getEndLine(), $this->scopeEndLine);
+        for ($line = $nodeStart + 1; $line <= $nodeEnd; $line++) {
+            $this->foldedLines[$line] = true;
+        }
+    }
+
+    private function shouldCountAsOne(Node $node): bool
+    {
+        return $this->isArrayNodeToFold($node)
+            || $this->isHeredocNodeToFold($node)
+            || $this->isCallChainNodeToFold($node);
+    }
+
+    private function isArrayNodeToFold(Node $node): bool
+    {
+        if (!($this->countAsOneOptions['array'] ?? false)) {
+            return false;
         }
 
-        if (($countAsOne['call_chain'] ?? false)
-            && ($node instanceof Expr\MethodCall
-                || $node instanceof Expr\StaticCall
-                || $node instanceof Expr\FuncCall
-                || $node instanceof Expr\NullsafeMethodCall)) {
-            return true;
+        return $node instanceof Expr\Array_;
+    }
+
+    private function isHeredocNodeToFold(Node $node): bool
+    {
+        if (!($this->countAsOneOptions['heredoc'] ?? false)) {
+            return false;
         }
 
-        return false;
+        if (!$node instanceof String_) {
+            return false;
+        }
+
+        $kind = $node->getAttribute('kind');
+        return $kind === String_::KIND_HEREDOC || $kind === String_::KIND_NOWDOC;
+    }
+
+    private function isCallChainNodeToFold(Node $node): bool
+    {
+        if (!($this->countAsOneOptions['call_chain'] ?? false)) {
+            return false;
+        }
+
+        return $node instanceof Expr\MethodCall
+            || $node instanceof Expr\StaticCall
+            || $node instanceof Expr\FuncCall
+            || $node instanceof Expr\NullsafeMethodCall;
     }
 
     private function normalizedCountAsOne(array $raw): array
@@ -163,5 +180,36 @@ final class MethodLengthCop implements CopInterface
         }
 
         return $normalized;
+    }
+
+    /** @return list<Node> */
+    private function childNodesOf(Node $node): array
+    {
+        $children = [];
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $subNode = $node->{$subNodeName};
+            if ($subNode instanceof Node) {
+                $children[] = $subNode;
+                continue;
+            }
+            if (is_array($subNode)) {
+                $this->appendChildNodes($children, $subNode);
+            }
+        }
+
+        return $children;
+    }
+
+    /**
+     * @param list<Node> $children
+     * @param array<int,mixed> $subNode
+     */
+    private function appendChildNodes(array &$children, array $subNode): void
+    {
+        foreach ($subNode as $child) {
+            if ($child instanceof Node) {
+                $children[] = $child;
+            }
+        }
     }
 }
