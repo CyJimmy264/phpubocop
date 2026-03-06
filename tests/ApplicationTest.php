@@ -169,16 +169,18 @@ YAML
         self::assertStringContainsString("'b' => 2,", $content);
     }
 
-    public function testLoadsConfigFromTargetDirectoryWhenConfigFlagIsNotProvided(): void
+    public function testLoadsConfigFromCurrentWorkingDirectoryWhenConfigFlagIsNotProvided(): void
     {
-        $dir = sys_get_temp_dir() . '/phpubocop_target_cfg_' . uniqid('', true);
-        mkdir($dir, 0777, true);
+        $dir = sys_get_temp_dir() . '/phpubocop_cwd_cfg_' . uniqid('', true);
+        $targetDir = $dir . '/target';
+        mkdir($targetDir, 0777, true);
 
-        $file = $dir . '/sample.php';
-        $config = $dir . '/.phpubocop.yml';
+        $file = $targetDir . '/sample.php';
+        $cwd = getcwd();
+        self::assertIsString($cwd);
 
         file_put_contents($file, "<?php\n\$a = \"hello\";\n");
-        file_put_contents($config, <<<'YAML'
+        file_put_contents($dir . '/.phpubocop.yml', <<<'YAML'
 Style/DoubleQuotes:
   Enabled: false
 YAML
@@ -186,12 +188,56 @@ YAML
 
         $app = new Application();
 
-        ob_start();
-        $exitCode = $app->run([
-            'phpubocop',
-            $dir,
-        ]);
-        ob_end_clean();
+        chdir($dir);
+        try {
+            ob_start();
+            $exitCode = $app->run([
+                'phpubocop',
+                $file,
+            ]);
+            ob_end_clean();
+        } finally {
+            chdir($cwd);
+        }
+
+        self::assertSame(0, $exitCode);
+    }
+
+    public function testPrefersTargetPathConfigOverCurrentWorkingDirectoryConfig(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_cfg_priority_' . uniqid('', true);
+        $targetDir = $dir . '/target';
+        mkdir($targetDir, 0777, true);
+
+        $file = $targetDir . '/sample.php';
+        $cwd = getcwd();
+        self::assertIsString($cwd);
+
+        file_put_contents($file, "<?php\n\$a = \"hello\";\n");
+        file_put_contents($dir . '/.phpubocop.yml', <<<'YAML'
+Style/DoubleQuotes:
+  Enabled: true
+YAML
+);
+        file_put_contents($targetDir . '/.phpubocop.yml', <<<'YAML'
+Style/DoubleQuotes:
+  Enabled: false
+YAML
+);
+
+        $app = new Application();
+
+        chdir($dir);
+        try {
+            ob_start();
+            $exitCode = $app->run([
+                'phpubocop',
+                $file,
+            ]);
+            ob_end_clean();
+        } finally {
+            chdir($cwd);
+        }
 
         self::assertSame(0, $exitCode);
     }

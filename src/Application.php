@@ -128,7 +128,11 @@ final class Application
             }
         }
 
-        return is_file('.phpubocop.yml') ? '.phpubocop.yml' : null;
+        if (is_file('.phpubocop.yml')) {
+            return '.phpubocop.yml';
+        }
+
+        return null;
     }
 
     private function resolveFormatter(string $format): FormatterInterface
