@@ -161,6 +161,17 @@ Metrics/ParameterLists:
 - `Metrics/MethodLength`
 - `Metrics/PerceivedComplexity`
 - `Metrics/ParameterLists`
+- `Architecture/ThinLayerBoundary`
+- `Architecture/ThinLayerComplexity`
+- `Architecture/ThinLayerSize`
+- `Architecture/ThinLayerSuperglobalUsage`
+- `Architecture/ThinLayerForbiddenFunctions`
+- `Architecture/ThinLayerForbiddenMethodCalls`
+- `Architecture/ThinLayerGlobalStateUsage`
+- `Architecture/ThinLayerIncludeUsage`
+- `Architecture/ThinLayerForbiddenStaticCalls`
+
+Thin-layer family documentation: [docs/thin-layer-cops.md](docs/thin-layer-cops.md)
 
 ## Architecture
 

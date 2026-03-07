@@ -15,9 +15,11 @@ use PHPuboCop\Formatter\TextFormatter;
 
 final class Application
 {
+    private bool $bitrixHintPrinted = false;
+
     public function run(array $argv): int
     {
-        [$paths, $configPath, $format, $autocorrect, $autocorrectAll, $verbose] = $this->parseArgs($argv);
+        [$paths, $configPath, $profile, $format, $autocorrect, $autocorrectAll, $verbose] = $this->parseArgs($argv);
 
         $cops = CopRegistry::default();
         $configLoader = new ConfigLoader();
@@ -26,6 +28,7 @@ final class Application
         $inspectedFiles = [];
         $runContext = [
             'configPath' => $configPath,
+            'profile' => $profile,
             'autocorrect' => $autocorrect,
             'autocorrectAll' => $autocorrectAll,
             'verbose' => $verbose,
@@ -44,6 +47,7 @@ final class Application
     /**
      * @param array{
      *   configPath:?string,
+     *   profile:?string,
      *   autocorrect:bool,
      *   autocorrectAll:bool,
      *   verbose:bool,
@@ -61,9 +65,10 @@ final class Application
         array &$inspectedFiles,
     ): void {
         $resolvedConfig = $this->resolveConfigPathForTarget($path, $context['configPath']);
-        $config = $context['configLoader']->load($resolvedConfig['path']);
+        $config = $context['configLoader']->load($resolvedConfig['path'], $context['profile'], $path);
 
         $this->runAutocorrectIfEnabled($path, $config, $context);
+        $this->printBitrixProfileHintIfNeeded($path, $config, $context['profile']);
         $this->printVerboseConfigIfEnabled($path, $resolvedConfig, $config, $context['verbose']);
         $this->collectOffensesFromRunner($context['runner'], $path, $config, $offenses);
 
@@ -107,6 +112,7 @@ final class Application
         $state = [
             'paths' => [],
             'configPath' => null,
+            'profile' => null,
             'format' => 'text',
             'autocorrect' => false,
             'autocorrectAll' => false,
@@ -130,6 +136,7 @@ final class Application
         return [
             $state['paths'],
             $state['configPath'],
+            $state['profile'],
             strtolower((string) $state['format']),
             (bool) $state['autocorrect'],
             (bool) $state['autocorrectAll'],
@@ -146,6 +153,7 @@ final class Application
      * @param array{
      *   paths:list<string>,
      *   configPath:?string,
+     *   profile:?string,
      *   format:string,
      *   autocorrect:bool,
      *   autocorrectAll:bool,
@@ -155,6 +163,9 @@ final class Application
     private function consumeArg(string $arg, array $argv, int &$i, array &$state): void
     {
         if ($this->consumeConfigArg($arg, $argv, $i, $state)) {
+            return;
+        }
+        if ($this->consumeProfileArg($arg, $argv, $i, $state)) {
             return;
         }
         if ($this->consumeFormatArg($arg, $argv, $i, $state)) {
@@ -167,6 +178,22 @@ final class Application
         if (!str_starts_with($arg, '--')) {
             $state['paths'][] = $arg;
         }
+    }
+
+    /** @param array{profile:?string} $state */
+    private function consumeProfileArg(string $arg, array $argv, int &$i, array &$state): bool
+    {
+        if (str_starts_with($arg, '--profile=')) {
+            $state['profile'] = strtolower((string) substr($arg, strlen('--profile=')));
+            return true;
+        }
+        if ($arg !== '--profile') {
+            return false;
+        }
+
+        $i++;
+        $state['profile'] = isset($argv[$i]) ? strtolower((string) $argv[$i]) : null;
+        return true;
     }
 
     /** @param array{configPath:?string} $state */
@@ -310,11 +337,13 @@ final class Application
 PHPuboCop - RuboCop-inspired linter for PHP
 
 Usage:
-  phpubocop [path ...] [--config=.phpubocop.yml] [--format=text|json] [--autocorrect] [--autocorrect-all] [--verbose]
+  phpubocop [path ...] [--config=.phpubocop.yml] [--profile=bitrix]
+            [--format=text|json] [--autocorrect] [--autocorrect-all] [--verbose]
 
 Examples:
   phpubocop src
   phpubocop src tests
+  phpubocop . --profile=bitrix
   phpubocop . --format=json
   phpubocop src --autocorrect
   phpubocop src --autocorrect-all
@@ -334,6 +363,131 @@ TXT;
         fwrite(STDERR, sprintf("[phpubocop] target: %s\n", $path));
         fwrite(STDERR, sprintf("[phpubocop] config: %s (%s)\n", $configPath, $resolvedConfig['source']));
         fwrite(STDERR, sprintf("[phpubocop] excludes: %s\n", $excludeText));
+    }
+
+    private function printBitrixProfileHintIfNeeded(string $path, array $config, ?string $profile): void
+    {
+        $bitrixPrefix = $this->bitrixHintPrefix($path, $config, $profile);
+        if ($bitrixPrefix === null) {
+            return;
+        }
+
+        fwrite(
+            STDERR,
+            $this->bitrixHintMessage($bitrixPrefix),
+        );
+        $this->bitrixHintPrinted = true;
+    }
+
+    private function bitrixHintPrefix(string $path, array $config, ?string $profile): ?string
+    {
+        if ($this->bitrixHintPrinted || $profile === 'bitrix') {
+            return null;
+        }
+
+        $enabled = (bool) (($config['Architecture/ThinLayerBoundary']['Enabled'] ?? false));
+        if ($enabled) {
+            return null;
+        }
+
+        return $this->detectBitrixPrefix($path);
+    }
+
+    private function bitrixHintMessage(string $bitrixPrefix): string
+    {
+        [$target, $business, $migrations] = $this->bitrixGuardPaths($bitrixPrefix);
+        return sprintf(
+            "[phpubocop] Detected Bitrix project. Suggested .phpubocop.yml block:\n"
+            . "Architecture/ThinLayerBoundary:\n"
+            . "  Enabled: true\n"
+            . "  TargetPaths:\n    - %s\n"
+            . "  BusinessLayerPaths:\n    - %s\n    - %s\n",
+            $target,
+            $business,
+            $migrations,
+        );
+    }
+
+    /** @return array{0:string,1:string,2:string} */
+    private function bitrixGuardPaths(string $bitrixPrefix): array
+    {
+        return [
+            $this->suggestedPath($bitrixPrefix, '**'),
+            $this->suggestedPath($bitrixPrefix, 'local/php_interface/lib/**'),
+            $this->suggestedPath($bitrixPrefix, 'local/php_interface/migrations/**'),
+        ];
+    }
+
+    private function detectBitrixPrefix(string $path): ?string
+    {
+        $current = $this->resolvedTargetDirectory($path);
+        if ($current === null) {
+            return null;
+        }
+
+        return $this->bitrixPrefixInAncestorChain($current);
+    }
+
+    private function bitrixPrefixInAncestorChain(string $current): ?string
+    {
+        for ($i = 0; $i < 8; $i++) {
+            $prefix = $this->bitrixPrefixInCurrent($current);
+            if ($prefix !== null) {
+                return $prefix;
+            }
+
+            $next = $this->nextParentPath($current);
+            if ($next === null) {
+                break;
+            }
+            $current = $next;
+        }
+
+        return null;
+    }
+
+    private function resolvedTargetDirectory(string $path): ?string
+    {
+        $candidate = is_file($path) ? dirname($path) : $path;
+        $realPath = realpath($candidate);
+        if (!is_string($realPath)) {
+            return null;
+        }
+
+        return rtrim($realPath, DIRECTORY_SEPARATOR);
+    }
+
+    private function bitrixPrefixInCurrent(string $current): ?string
+    {
+        if (is_dir($current . DIRECTORY_SEPARATOR . 'bitrix')) {
+            return '';
+        }
+        if (is_dir($current . DIRECTORY_SEPARATOR . 'www_data' . DIRECTORY_SEPARATOR . 'bitrix')) {
+            return 'www_data';
+        }
+
+        return null;
+    }
+
+    private function nextParentPath(string $current): ?string
+    {
+        $parent = dirname($current);
+        if ($parent === $current) {
+            return null;
+        }
+
+        return $parent;
+    }
+
+    private function suggestedPath(string $prefix, string $suffix): string
+    {
+        $prefix = trim($prefix, '/');
+        $suffix = ltrim($suffix, '/');
+        if ($prefix === '') {
+            return $suffix;
+        }
+
+        return $prefix . '/' . $suffix;
     }
 
     private function printVerboseDiscovery(array $stats): void

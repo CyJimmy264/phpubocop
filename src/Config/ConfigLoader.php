@@ -8,18 +8,60 @@ use Symfony\Component\Yaml\Yaml;
 
 final class ConfigLoader
 {
-    public function load(?string $configPath): array
+    /** @var list<string> */
+    private const THIN_LAYER_INHERITED_KEYS = ['Enabled', 'TargetPaths', 'BusinessLayerPaths', 'ExcludePaths'];
+
+    /** @var list<string> */
+    private const THIN_LAYER_INHERITORS = [
+        'Architecture/ThinLayerComplexity',
+        'Architecture/ThinLayerSize',
+        'Architecture/ThinLayerSuperglobalUsage',
+        'Architecture/ThinLayerGlobalStateUsage',
+        'Architecture/ThinLayerIncludeUsage',
+        'Architecture/ThinLayerForbiddenFunctions',
+        'Architecture/ThinLayerForbiddenMethodCalls',
+        'Architecture/ThinLayerForbiddenStaticCalls',
+    ];
+
+    public function load(?string $configPath, ?string $profile = null, ?string $targetPath = null): array
+    {
+        $baseConfig = $this->defaultConfig();
+        $loadedConfig = $this->loadedConfig($configPath);
+        if ($loadedConfig === null) {
+            return $this->applyThinLayerInheritance(
+                $this->applyProfile($baseConfig, $profile, $targetPath),
+            );
+        }
+
+        $effectiveProfile = $this->effectiveProfile($loadedConfig, $profile);
+        $merged = array_replace_recursive($baseConfig, $loadedConfig);
+        return $this->applyThinLayerInheritance(
+            $this->applyProfile($merged, $effectiveProfile, $targetPath),
+        );
+    }
+
+    private function loadedConfig(?string $configPath): ?array
     {
         if ($configPath === null || !is_file($configPath)) {
-            return $this->defaultConfig();
+            return null;
         }
 
         $parsed = Yaml::parseFile($configPath);
-        if (!is_array($parsed)) {
-            return $this->defaultConfig();
+        return is_array($parsed) ? $parsed : null;
+    }
+
+    private function effectiveProfile(array $loadedConfig, ?string $profile): ?string
+    {
+        if ($profile !== null) {
+            return $profile;
+        }
+        if (!isset($loadedConfig['AllCops']['Profile'])) {
+            return null;
         }
 
-        return array_replace_recursive($this->defaultConfig(), $parsed);
+        return is_string($loadedConfig['AllCops']['Profile'])
+            ? strtolower($loadedConfig['AllCops']['Profile'])
+            : null;
     }
 
     private function defaultConfig(): array
@@ -104,6 +146,62 @@ final class ConfigLoader
                 'Enabled' => true,
                 'AllowedDynamicIncludePatterns' => [],
             ],
+            'Architecture/ThinLayerBoundary' => [
+                'Enabled' => false,
+                'TargetPaths' => ['**/*.php'],
+                'BusinessLayerPaths' => [],
+                'ExcludePaths' => [
+                    'vendor/**',
+                ],
+            ],
+            'Architecture/ThinLayerComplexity' => [
+                'MaxBranchNodes' => 6,
+            ],
+            'Architecture/ThinLayerSize' => [
+                'MaxLines' => 200,
+            ],
+            'Architecture/ThinLayerSuperglobalUsage' => [
+                'ForbiddenSuperglobals' => ['_REQUEST'],
+            ],
+            'Architecture/ThinLayerGlobalStateUsage' => [
+                'CheckGlobalKeyword' => true,
+                'ForbiddenGlobals' => ['GLOBALS', 'APPLICATION', 'USER', 'DB'],
+            ],
+            'Architecture/ThinLayerIncludeUsage' => [
+                'AllowedIncludePatterns' => [
+                    '/bitrix/modules/main/include/prolog_before.php',
+                    '/bitrix/modules/main/include/prolog_after.php',
+                    '/bitrix/modules/main/include/prolog_admin_before.php',
+                    '/bitrix/modules/main/include/prolog_admin_after.php',
+                    '/bitrix/modules/main/include/epilog_admin.php',
+                    '/bitrix/header.php',
+                    '/bitrix/footer.php',
+                    '/local/php_interface/lib/',
+                    '/include/',
+                ],
+            ],
+            'Architecture/ThinLayerForbiddenFunctions' => [
+                'ForbiddenFunctions' => ['mysql_query', 'mysqli_query', 'pg_query'],
+            ],
+            'Architecture/ThinLayerForbiddenMethodCalls' => [
+                'ForbiddenMethodPatterns' => [
+                    '^(query|exec|fetch|fetchall|fetchassoc|fetchrow)$',
+                ],
+            ],
+            'Architecture/ThinLayerForbiddenStaticCalls' => [
+                'ForbiddenStaticCallPrefixes' => [
+                    'bitrix\\sale\\',
+                    'bitrix\\iblock\\',
+                    'bitrix\\catalog\\',
+                ],
+                'ForbiddenStaticClasses' => [
+                    'csaleorder',
+                    'csalebasket',
+                    'ciblock',
+                    'ciblockelement',
+                    'ccatalogproduct',
+                ],
+            ],
             'Style/DoubleQuotes' => [
                 'Enabled' => true,
             ],
@@ -117,5 +215,130 @@ final class ConfigLoader
                 'Enabled' => true,
             ],
         ];
+    }
+
+    private function applyProfile(array $config, ?string $profile, ?string $targetPath): array
+    {
+        if ($profile !== 'bitrix') {
+            return $config;
+        }
+
+        $rootPrefix = $this->bitrixRootPrefix($targetPath);
+        $config['Architecture/ThinLayerBoundary'] = array_replace_recursive(
+            $config['Architecture/ThinLayerBoundary'] ?? [],
+            [
+                'Enabled' => true,
+                'TargetPaths' => [$this->prefixPath($rootPrefix, '**')],
+                'BusinessLayerPaths' => [
+                    $this->prefixPath($rootPrefix, 'local/php_interface/lib/**'),
+                    $this->prefixPath($rootPrefix, 'local/php_interface/migrations/**'),
+                ],
+            ],
+        );
+        return $config;
+    }
+
+    private function applyThinLayerInheritance(array $config): array
+    {
+        $boundary = is_array($config['Architecture/ThinLayerBoundary'] ?? null)
+            ? $config['Architecture/ThinLayerBoundary']
+            : [];
+
+        foreach (self::THIN_LAYER_INHERITORS as $copName) {
+            $copConfig = is_array($config[$copName] ?? null) ? $config[$copName] : [];
+            $config[$copName] = $this->inheritThinLayerConfig($copConfig, $boundary);
+        }
+
+        return $config;
+    }
+
+    private function inheritThinLayerConfig(array $copConfig, array $boundaryConfig): array
+    {
+        foreach (self::THIN_LAYER_INHERITED_KEYS as $key) {
+            if (array_key_exists($key, $copConfig)) {
+                continue;
+            }
+            if (!array_key_exists($key, $boundaryConfig)) {
+                continue;
+            }
+
+            $copConfig[$key] = $boundaryConfig[$key];
+        }
+
+        return $copConfig;
+    }
+
+    private function bitrixRootPrefix(?string $targetPath): string
+    {
+        if (!is_string($targetPath) || $targetPath === '') {
+            return '';
+        }
+
+        $path = is_file($targetPath) ? dirname($targetPath) : $targetPath;
+        $real = realpath($path);
+        if (!is_string($real)) {
+            return '';
+        }
+
+        $candidate = $this->findBitrixWebRoot($real);
+        if ($candidate === null) {
+            return '';
+        }
+
+        return basename($candidate);
+    }
+
+    private function findBitrixWebRoot(string $start): ?string
+    {
+        $current = rtrim($start, DIRECTORY_SEPARATOR);
+        for ($i = 0; $i < 8; $i++) {
+            $found = $this->bitrixWebRootInCurrent($current);
+            if ($found !== null) {
+                return $found;
+            }
+
+            $next = $this->nextParentPath($current);
+            if ($next === null) {
+                break;
+            }
+            $current = $next;
+        }
+
+        return null;
+    }
+
+    private function bitrixWebRootInCurrent(string $current): ?string
+    {
+        if (is_dir($current . DIRECTORY_SEPARATOR . 'bitrix')) {
+            return $current;
+        }
+
+        $wwwData = $current . DIRECTORY_SEPARATOR . 'www_data';
+        if (is_dir($wwwData . DIRECTORY_SEPARATOR . 'bitrix')) {
+            return $wwwData;
+        }
+
+        return null;
+    }
+
+    private function nextParentPath(string $current): ?string
+    {
+        $parent = dirname($current);
+        if ($parent === $current) {
+            return null;
+        }
+
+        return $parent;
+    }
+
+    private function prefixPath(string $prefix, string $suffix): string
+    {
+        $prefix = trim($prefix, '/');
+        $suffix = ltrim($suffix, '/');
+        if ($prefix === '') {
+            return $suffix;
+        }
+
+        return $prefix . '/' . $suffix;
     }
 }

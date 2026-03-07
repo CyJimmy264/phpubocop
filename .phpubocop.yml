@@ -36,6 +36,40 @@ Security/EvalAndDynamicInclude:
   AllowedDynamicIncludePatterns:
     - "\\$_SERVER\\s*\\[\\s*[\"']DOCUMENT_ROOT[\"']\\s*\\]"
 
+Architecture/ThinLayerBoundary:
+  Enabled: false
+
+Architecture/ThinLayerComplexity:
+  MaxBranchNodes: 6
+
+Architecture/ThinLayerSize:
+  MaxLines: 200
+
+Architecture/ThinLayerSuperglobalUsage:
+  ForbiddenSuperglobals:
+    - _REQUEST
+
+Architecture/ThinLayerForbiddenMethodCalls:
+  ForbiddenMethodPatterns:
+    - "^(query|exec|fetch|fetchall|fetchassoc|fetchrow)$"
+
+Architecture/ThinLayerGlobalStateUsage:
+  CheckGlobalKeyword: true
+  ForbiddenGlobals:
+    - GLOBALS
+    - APPLICATION
+    - USER
+    - DB
+
+Architecture/ThinLayerIncludeUsage:
+  AllowedIncludePatterns:
+    - "/bitrix/modules/main/include/prolog_before.php"
+    - "/bitrix/modules/main/include/prolog_after.php"
+    - "/bitrix/header.php"
+    - "/bitrix/footer.php"
+    - "/local/php_interface/lib/"
+    - "/include/"
+
 Lint/DuplicateArrayKey:
   Enabled: true
 

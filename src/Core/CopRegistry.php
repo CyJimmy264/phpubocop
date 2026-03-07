@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace PHPuboCop\Core;
 
+use PHPuboCop\Cop\Architecture\ThinLayerBoundaryCop;
+use PHPuboCop\Cop\Architecture\ThinLayerComplexityCop;
+use PHPuboCop\Cop\Architecture\ThinLayerForbiddenFunctionsCop;
+use PHPuboCop\Cop\Architecture\ThinLayerGlobalStateUsageCop;
+use PHPuboCop\Cop\Architecture\ThinLayerIncludeUsageCop;
+use PHPuboCop\Cop\Architecture\ThinLayerForbiddenMethodCallsCop;
+use PHPuboCop\Cop\Architecture\ThinLayerForbiddenStaticCallsCop;
+use PHPuboCop\Cop\Architecture\ThinLayerSizeCop;
+use PHPuboCop\Cop\Architecture\ThinLayerSuperglobalUsageCop;
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\IndentationStyleCop;
 use PHPuboCop\Cop\Layout\TrailingWhitespaceCop;
@@ -58,6 +67,15 @@ final class CopRegistry
             new UnserializeCop(),
             new ExecCop(),
             new EvalAndDynamicIncludeCop(),
+            new ThinLayerBoundaryCop(),
+            new ThinLayerComplexityCop(),
+            new ThinLayerSizeCop(),
+            new ThinLayerSuperglobalUsageCop(),
+            new ThinLayerGlobalStateUsageCop(),
+            new ThinLayerIncludeUsageCop(),
+            new ThinLayerForbiddenFunctionsCop(),
+            new ThinLayerForbiddenMethodCallsCop(),
+            new ThinLayerForbiddenStaticCallsCop(),
         ];
     }
 }
