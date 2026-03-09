@@ -7,10 +7,18 @@ namespace PHPuboCop\Cop\Architecture;
 use PHPuboCop\Cop\CopInterface;
 use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\SourceFile;
+use PhpParser\Node;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Scalar\String_;
 
 final class ThinLayerLengthCop implements CopInterface
 {
     use ThinLayerPathMatcher;
+
+    /** @var array<string,bool> */
+    private array $countAsOneOptions = [];
+    /** @var array<int,bool> */
+    private array $foldedLines = [];
 
     public function name(): string
     {
@@ -23,8 +31,9 @@ final class ThinLayerLengthCop implements CopInterface
             return [];
         }
 
-        $maxLines = (int) ($config['Max'] ?? 50);
-        $lineCount = $this->lineCount($file->content);
+        $maxLines = (int) ($config['Max'] ?? 25);
+        $countAsOne = $this->normalizedCountAsOne($config['CountAsOne'] ?? ['array', 'heredoc', 'call_chain']);
+        $lineCount = $this->lineCount($file, $countAsOne);
         if ($lineCount <= $maxLines) {
             return [];
         }
@@ -41,18 +50,39 @@ final class ThinLayerLengthCop implements CopInterface
         ];
     }
 
-    private function lineCount(string $contents): int
+    private function lineCount(SourceFile $file, array $countAsOne): int
     {
-        if ($contents === '') {
+        if ($file->content === '') {
             return 0;
         }
 
-        $tokens = token_get_all($contents);
-        return $this->countSignificantLines($tokens);
+        $tokens = token_get_all($file->content);
+        $significantLines = $this->significantLines($tokens);
+        if ($significantLines === []) {
+            return 0;
+        }
+
+        $this->countAsOneOptions = $countAsOne;
+        if ($this->countAsOneOptions === []) {
+            return count($significantLines);
+        }
+
+        return max(0, count($significantLines) - $this->foldedLineCount($file, $significantLines));
+    }
+
+    /** @param array<int,bool> $significantLines */
+    private function foldedLineCount(SourceFile $file, array $significantLines): int
+    {
+        $this->foldedLines = [];
+        foreach ($file->ast() as $node) {
+            $this->collectFoldedLines($node, $significantLines);
+        }
+
+        return count($this->foldedLines);
     }
 
     /** @param list<string|array{int,string,int}> $tokens */
-    private function countSignificantLines(array $tokens): int
+    private function significantLines(array $tokens): array
     {
         $significantLines = [];
         $currentLine = 1;
@@ -66,7 +96,7 @@ final class ThinLayerLengthCop implements CopInterface
             $currentLine = $this->handleStringToken($token, $currentLine, $significantLines);
         }
 
-        return count($significantLines);
+        return $significantLines;
     }
 
     /** @param array{int,string,int} $token @param array<int, bool> $significantLines */
@@ -113,5 +143,106 @@ final class ThinLayerLengthCop implements CopInterface
         for ($offset = 0; $offset <= $lineCount; $offset++) {
             $lines[$startLine + $offset] = true;
         }
+    }
+
+    /** @param array<int,bool> $significantLines */
+    private function collectFoldedLines(Node $node, array $significantLines): void
+    {
+        if ($this->shouldCountAsOne($node)) {
+            $this->markFoldedLineRange($node, $significantLines);
+        }
+
+        foreach ($this->childNodesOf($node) as $child) {
+            $this->collectFoldedLines($child, $significantLines);
+        }
+    }
+
+    /** @param array<int,bool> $significantLines */
+    private function markFoldedLineRange(Node $node, array $significantLines): void
+    {
+        $nodeStart = (int) $node->getStartLine();
+        $nodeEnd = (int) $node->getEndLine();
+        for ($line = $nodeStart + 1; $line <= $nodeEnd; $line++) {
+            if (isset($significantLines[$line])) {
+                $this->foldedLines[$line] = true;
+            }
+        }
+    }
+
+    private function shouldCountAsOne(Node $node): bool
+    {
+        return $this->isArrayNodeToFold($node)
+            || $this->isHeredocNodeToFold($node)
+            || $this->isCallChainNodeToFold($node);
+    }
+
+    private function isArrayNodeToFold(Node $node): bool
+    {
+        return ($this->countAsOneOptions['array'] ?? false) && $node instanceof Expr\Array_;
+    }
+
+    private function isHeredocNodeToFold(Node $node): bool
+    {
+        if (!($this->countAsOneOptions['heredoc'] ?? false) || !$node instanceof String_) {
+            return false;
+        }
+
+        $kind = $node->getAttribute('kind');
+        return $kind === String_::KIND_HEREDOC || $kind === String_::KIND_NOWDOC;
+    }
+
+    private function isCallChainNodeToFold(Node $node): bool
+    {
+        if (!($this->countAsOneOptions['call_chain'] ?? false)) {
+            return false;
+        }
+
+        return $node instanceof Expr\MethodCall
+            || $node instanceof Expr\StaticCall
+            || $node instanceof Expr\FuncCall
+            || $node instanceof Expr\NullsafeMethodCall;
+    }
+
+    private function normalizedCountAsOne(array $raw): array
+    {
+        $normalized = [];
+        $aliases = [
+            'hash' => 'array',
+            'method_call' => 'call_chain',
+            'call' => 'call_chain',
+        ];
+
+        foreach ($raw as $item) {
+            if (!is_string($item)) {
+                continue;
+            }
+
+            $key = strtolower($item);
+            $normalized[$aliases[$key] ?? $key] = true;
+        }
+
+        return $normalized;
+    }
+
+    /** @return list<Node> */
+    private function childNodesOf(Node $node): array
+    {
+        $children = [];
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $subNode = $node->{$subNodeName};
+            if ($subNode instanceof Node) {
+                $children[] = $subNode;
+                continue;
+            }
+            if (is_array($subNode)) {
+                foreach ($subNode as $child) {
+                    if ($child instanceof Node) {
+                        $children[] = $child;
+                    }
+                }
+            }
+        }
+
+        return $children;
     }
 }

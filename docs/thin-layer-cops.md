@@ -77,6 +77,10 @@ Key config:
 ```yaml
 Architecture/ThinLayerLength:
   Max: 25
+  CountAsOne:
+    - array
+    - heredoc
+    - call_chain
 ```
 
 ## Cop: `Architecture/ThinLayerSuperglobalUsage`
@@ -120,11 +124,8 @@ Key config:
 
 ```yaml
 Architecture/ThinLayerGlobalStateUsage:
-  CheckGlobalKeyword: true
+  CheckGlobalKeyword: false
   ForbiddenGlobals:
-    - "GLOBALS"
-    - "APPLICATION"
-    - "USER"
     - "DB"
 ```
 
@@ -189,6 +190,10 @@ Architecture/ThinLayerComplexity:
 
 Architecture/ThinLayerLength:
   Max: 25
+  CountAsOne:
+    - array
+    - heredoc
+    - call_chain
 
 Architecture/ThinLayerSuperglobalUsage:
   ForbiddenSuperglobals:
@@ -199,11 +204,8 @@ Architecture/ThinLayerForbiddenMethodCalls:
     - "^(query|exec|fetch|fetchall|fetchassoc|fetchrow)$"
 
 Architecture/ThinLayerGlobalStateUsage:
-  CheckGlobalKeyword: true
+  CheckGlobalKeyword: false
   ForbiddenGlobals:
-    - "GLOBALS"
-    - "APPLICATION"
-    - "USER"
     - "DB"
 
 Architecture/ThinLayerIncludeUsage:

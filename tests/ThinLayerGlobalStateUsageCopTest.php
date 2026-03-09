@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ThinLayerGlobalStateUsageCopTest extends TestCase
 {
-    public function testReportsGlobalKeywordUsageInThinLayer(): void
+    public function testReportsGlobalKeywordUsageWhenEnabled(): void
     {
         $cop = new ThinLayerGlobalStateUsageCop();
         $source = new SourceFile(
@@ -18,7 +18,10 @@ final class ThinLayerGlobalStateUsageCopTest extends TestCase
             "<?php\nglobal \$DB;\n",
         );
 
-        $offenses = $cop->inspect($source);
+        $offenses = $cop->inspect($source, [
+            'CheckGlobalKeyword' => true,
+            'ForbiddenGlobals' => ['DB'],
+        ]);
 
         self::assertCount(2, $offenses);
         self::assertSame('Architecture/ThinLayerGlobalStateUsage', $offenses[0]->copName);
@@ -29,13 +32,13 @@ final class ThinLayerGlobalStateUsageCopTest extends TestCase
         $cop = new ThinLayerGlobalStateUsageCop();
         $source = new SourceFile(
             '/tmp/project/www_data/ajax/order.php',
-            "<?php\n\$id = \$GLOBALS['id'];\n",
+            "<?php\n\$id = \$DB->query('SELECT 1');\n",
         );
 
         $offenses = $cop->inspect($source);
 
         self::assertCount(1, $offenses);
-        self::assertStringContainsString('$GLOBALS', $offenses[0]->message);
+        self::assertStringContainsString('$DB', $offenses[0]->message);
     }
 
     public function testSkipsBusinessLayerFilesByConfiguredPaths(): void
@@ -78,6 +81,7 @@ final class ThinLayerGlobalStateUsageCopTest extends TestCase
 
         $offenses = $cop->inspect($source, [
             'CheckGlobalKeyword' => false,
+            'ForbiddenGlobals' => ['DB'],
         ]);
 
         self::assertCount(1, $offenses);

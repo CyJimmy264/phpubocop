@@ -69,4 +69,59 @@ final class ThinLayerLengthCopTest extends TestCase
 
         self::assertCount(0, $offenses);
     }
+
+    public function testCountsMultilineArrayAsOneByDefault(): void
+    {
+        $cop = new ThinLayerLengthCop();
+        $source = new SourceFile(
+            '/tmp/project/www_data/ajax/payload.php',
+            "<?php\n\$payload = [\n    'a',\n    'b',\n    'c',\n];\n",
+        );
+
+        $offenses = $cop->inspect($source, ['Max' => 2]);
+
+        self::assertCount(0, $offenses);
+    }
+
+    public function testCanDisableArrayCountAsOne(): void
+    {
+        $cop = new ThinLayerLengthCop();
+        $source = new SourceFile(
+            '/tmp/project/www_data/ajax/payload.php',
+            "<?php\n\$payload = [\n    'a',\n    'b',\n    'c',\n];\n",
+        );
+
+        $offenses = $cop->inspect($source, [
+            'Max' => 2,
+            'CountAsOne' => [],
+        ]);
+
+        self::assertCount(1, $offenses);
+    }
+
+    public function testCountsHeredocAsOneByDefault(): void
+    {
+        $cop = new ThinLayerLengthCop();
+        $source = new SourceFile(
+            '/tmp/project/www_data/ajax/text.php',
+            "<?php\n\$text = <<<TXT\nline1\nline2\nTXT;\n",
+        );
+
+        $offenses = $cop->inspect($source, ['Max' => 2]);
+
+        self::assertCount(0, $offenses);
+    }
+
+    public function testCountsCallChainAsOneByDefault(): void
+    {
+        $cop = new ThinLayerLengthCop();
+        $source = new SourceFile(
+            '/tmp/project/www_data/ajax/chain.php',
+            "<?php\n\$result = \$builder\n    ->stepOne()\n    ->stepTwo()\n    ->stepThree();\n",
+        );
+
+        $offenses = $cop->inspect($source, ['Max' => 2]);
+
+        self::assertCount(0, $offenses);
+    }
 }

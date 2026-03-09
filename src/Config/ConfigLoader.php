@@ -159,13 +159,14 @@ final class ConfigLoader
             ],
             'Architecture/ThinLayerLength' => [
                 'Max' => 25,
+                'CountAsOne' => ['array', 'heredoc', 'call_chain'],
             ],
             'Architecture/ThinLayerSuperglobalUsage' => [
                 'ForbiddenSuperglobals' => ['_REQUEST'],
             ],
             'Architecture/ThinLayerGlobalStateUsage' => [
-                'CheckGlobalKeyword' => true,
-                'ForbiddenGlobals' => ['GLOBALS', 'APPLICATION', 'USER', 'DB'],
+                'CheckGlobalKeyword' => false,
+                'ForbiddenGlobals' => ['DB'],
             ],
             'Architecture/ThinLayerIncludeUsage' => [
                 'AllowedIncludePatterns' => [

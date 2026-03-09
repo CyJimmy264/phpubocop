@@ -59,4 +59,30 @@ PHP,
 
         self::assertCount(0, $offenses);
     }
+
+    public function testBusinessLayerPatternDoesNotOvermatchNestedLocalPaths(): void
+    {
+        $cop = new ThinLayerComplexityCop();
+
+        $settingsFile = new SourceFile(
+            '/tmp/project/www_data/local/.settings.php',
+            "<?php\nif (\$a) {}\nif (\$b) {}\nif (\$c) {}\n",
+        );
+        $moduleAdminFile = new SourceFile(
+            '/tmp/project/www_data/local/modules/example/admin/page.php',
+            "<?php\nif (\$a) {}\nif (\$b) {}\nif (\$c) {}\n",
+        );
+
+        $settingsOffenses = $cop->inspect($settingsFile, [
+            'BusinessLayerPaths' => ['local/*.php'],
+            'MaxBranchNodes' => 2,
+        ]);
+        $moduleAdminOffenses = $cop->inspect($moduleAdminFile, [
+            'BusinessLayerPaths' => ['local/*.php'],
+            'MaxBranchNodes' => 2,
+        ]);
+
+        self::assertCount(0, $settingsOffenses);
+        self::assertCount(1, $moduleAdminOffenses);
+    }
 }

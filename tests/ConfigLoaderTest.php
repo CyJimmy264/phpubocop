@@ -56,6 +56,10 @@ final class ConfigLoaderTest extends TestCase
             ['vendor/**'],
             $config['Architecture/ThinLayerLength']['ExcludePaths'] ?? [],
         );
+        self::assertSame(
+            ['array', 'heredoc', 'call_chain'],
+            $config['Architecture/ThinLayerLength']['CountAsOne'] ?? [],
+        );
         self::assertFalse((bool) ($config['Architecture/ThinLayerSuperglobalUsage']['Enabled'] ?? true));
         self::assertSame(
             ['**/*.php'],
@@ -180,6 +184,10 @@ YAML);
         self::assertSame(
             $expectedBusinessPaths,
             $config['Architecture/ThinLayerLength']['BusinessLayerPaths'] ?? [],
+        );
+        self::assertSame(
+            ['array', 'heredoc', 'call_chain'],
+            $config['Architecture/ThinLayerLength']['CountAsOne'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerSuperglobalUsage']['Enabled'] ?? false));
         self::assertSame(
