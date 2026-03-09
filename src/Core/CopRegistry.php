@@ -11,7 +11,7 @@ use PHPuboCop\Cop\Architecture\ThinLayerGlobalStateUsageCop;
 use PHPuboCop\Cop\Architecture\ThinLayerIncludeUsageCop;
 use PHPuboCop\Cop\Architecture\ThinLayerForbiddenMethodCallsCop;
 use PHPuboCop\Cop\Architecture\ThinLayerForbiddenStaticCallsCop;
-use PHPuboCop\Cop\Architecture\ThinLayerSizeCop;
+use PHPuboCop\Cop\Architecture\ThinLayerLengthCop;
 use PHPuboCop\Cop\Architecture\ThinLayerSuperglobalUsageCop;
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Layout\IndentationStyleCop;
@@ -69,7 +69,7 @@ final class CopRegistry
             new EvalAndDynamicIncludeCop(),
             new ThinLayerBoundaryCop(),
             new ThinLayerComplexityCop(),
-            new ThinLayerSizeCop(),
+            new ThinLayerLengthCop(),
             new ThinLayerSuperglobalUsageCop(),
             new ThinLayerGlobalStateUsageCop(),
             new ThinLayerIncludeUsageCop(),

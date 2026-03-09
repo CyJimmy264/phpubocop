@@ -14,7 +14,7 @@ final class ConfigLoader
     /** @var list<string> */
     private const THIN_LAYER_INHERITORS = [
         'Architecture/ThinLayerComplexity',
-        'Architecture/ThinLayerSize',
+        'Architecture/ThinLayerLength',
         'Architecture/ThinLayerSuperglobalUsage',
         'Architecture/ThinLayerGlobalStateUsage',
         'Architecture/ThinLayerIncludeUsage',
@@ -157,8 +157,8 @@ final class ConfigLoader
             'Architecture/ThinLayerComplexity' => [
                 'MaxBranchNodes' => 6,
             ],
-            'Architecture/ThinLayerSize' => [
-                'MaxLines' => 200,
+            'Architecture/ThinLayerLength' => [
+                'Max' => 25,
             ],
             'Architecture/ThinLayerSuperglobalUsage' => [
                 'ForbiddenSuperglobals' => ['_REQUEST'],
@@ -229,13 +229,21 @@ final class ConfigLoader
             [
                 'Enabled' => true,
                 'TargetPaths' => [$this->prefixPath($rootPrefix, '**')],
-                'BusinessLayerPaths' => [
-                    $this->prefixPath($rootPrefix, 'local/php_interface/lib/**'),
-                    $this->prefixPath($rootPrefix, 'local/php_interface/migrations/**'),
-                ],
+                'BusinessLayerPaths' => $this->bitrixBusinessLayerPaths(),
             ],
         );
         return $config;
+    }
+
+    /** @return list<string> */
+    private function bitrixBusinessLayerPaths(): array
+    {
+        return [
+            'local/php_interface/**',
+            'local/modules/*/lib/**',
+            'local/modules/*/include.php',
+            'local/modules/*/install/index.php',
+        ];
     }
 
     private function applyThinLayerInheritance(array $config): array

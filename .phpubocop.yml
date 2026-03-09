@@ -42,8 +42,8 @@ Architecture/ThinLayerBoundary:
 Architecture/ThinLayerComplexity:
   MaxBranchNodes: 6
 
-Architecture/ThinLayerSize:
-  MaxLines: 200
+Architecture/ThinLayerLength:
+  Max: 25
 
 Architecture/ThinLayerSuperglobalUsage:
   ForbiddenSuperglobals:

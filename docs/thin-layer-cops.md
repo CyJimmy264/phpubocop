@@ -66,7 +66,7 @@ Architecture/ThinLayerForbiddenFunctions:
   ForbiddenFunctions: ["mysql_query", "mysqli_query", "pg_query"]
 ```
 
-## Cop: `Architecture/ThinLayerSize`
+## Cop: `Architecture/ThinLayerLength`
 
 Checks total file size by line count.
 
@@ -75,8 +75,8 @@ Default severity: `warning`.
 Key config:
 
 ```yaml
-Architecture/ThinLayerSize:
-  MaxLines: 200
+Architecture/ThinLayerLength:
+  Max: 25
 ```
 
 ## Cop: `Architecture/ThinLayerSuperglobalUsage`
@@ -187,8 +187,8 @@ Architecture/ThinLayerBoundary:
 Architecture/ThinLayerComplexity:
   MaxBranchNodes: 6
 
-Architecture/ThinLayerSize:
-  MaxLines: 200
+Architecture/ThinLayerLength:
+  Max: 25
 
 Architecture/ThinLayerSuperglobalUsage:
   ForbiddenSuperglobals:

@@ -395,26 +395,33 @@ TXT;
 
     private function bitrixHintMessage(string $bitrixPrefix): string
     {
-        [$target, $business, $migrations] = $this->bitrixGuardPaths($bitrixPrefix);
+        [$target, $businessPaths] = $this->bitrixGuardPaths($bitrixPrefix);
+        $businessLines = implode(
+            "\n",
+            array_map(static fn (string $path): string => "    - {$path}", $businessPaths),
+        );
         return sprintf(
             "[phpubocop] Detected Bitrix project. Suggested .phpubocop.yml block:\n"
             . "Architecture/ThinLayerBoundary:\n"
             . "  Enabled: true\n"
             . "  TargetPaths:\n    - %s\n"
-            . "  BusinessLayerPaths:\n    - %s\n    - %s\n",
+            . "  BusinessLayerPaths:\n%s\n",
             $target,
-            $business,
-            $migrations,
+            $businessLines,
         );
     }
 
-    /** @return array{0:string,1:string,2:string} */
+    /** @return array{0:string,1:list<string>} */
     private function bitrixGuardPaths(string $bitrixPrefix): array
     {
         return [
             $this->suggestedPath($bitrixPrefix, '**'),
-            $this->suggestedPath($bitrixPrefix, 'local/php_interface/lib/**'),
-            $this->suggestedPath($bitrixPrefix, 'local/php_interface/migrations/**'),
+            [
+                'local/php_interface/**',
+                'local/modules/*/lib/**',
+                'local/modules/*/include.php',
+                'local/modules/*/install/index.php',
+            ],
         ];
     }
 

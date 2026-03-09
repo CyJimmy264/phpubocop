@@ -163,7 +163,7 @@ Metrics/ParameterLists:
 - `Metrics/ParameterLists`
 - `Architecture/ThinLayerBoundary`
 - `Architecture/ThinLayerComplexity`
-- `Architecture/ThinLayerSize`
+- `Architecture/ThinLayerLength`
 - `Architecture/ThinLayerSuperglobalUsage`
 - `Architecture/ThinLayerForbiddenFunctions`
 - `Architecture/ThinLayerForbiddenMethodCalls`

@@ -47,14 +47,14 @@ final class ConfigLoaderTest extends TestCase
             ['vendor/**'],
             $config['Architecture/ThinLayerComplexity']['ExcludePaths'] ?? [],
         );
-        self::assertFalse((bool) ($config['Architecture/ThinLayerSize']['Enabled'] ?? true));
+        self::assertFalse((bool) ($config['Architecture/ThinLayerLength']['Enabled'] ?? true));
         self::assertSame(
             ['**/*.php'],
-            $config['Architecture/ThinLayerSize']['TargetPaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['TargetPaths'] ?? [],
         );
         self::assertSame(
             ['vendor/**'],
-            $config['Architecture/ThinLayerSize']['ExcludePaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['ExcludePaths'] ?? [],
         );
         self::assertFalse((bool) ($config['Architecture/ThinLayerSuperglobalUsage']['Enabled'] ?? true));
         self::assertSame(
@@ -115,7 +115,7 @@ YAML);
         self::assertTrue((bool) ($config['Architecture/ThinLayerForbiddenFunctions']['Enabled'] ?? false));
         self::assertFalse((bool) ($config['Architecture/ThinLayerForbiddenStaticCalls']['Enabled'] ?? true));
         self::assertFalse((bool) ($config['Architecture/ThinLayerComplexity']['Enabled'] ?? true));
-        self::assertFalse((bool) ($config['Architecture/ThinLayerSize']['Enabled'] ?? true));
+        self::assertFalse((bool) ($config['Architecture/ThinLayerLength']['Enabled'] ?? true));
         self::assertFalse((bool) ($config['Architecture/ThinLayerSuperglobalUsage']['Enabled'] ?? true));
         self::assertFalse((bool) ($config['Architecture/ThinLayerForbiddenMethodCalls']['Enabled'] ?? true));
         self::assertFalse((bool) ($config['Architecture/ThinLayerGlobalStateUsage']['Enabled'] ?? true));
@@ -129,6 +129,12 @@ YAML);
 
         $loader = new ConfigLoader();
         $config = $loader->load(null, 'bitrix', $dir);
+        $expectedBusinessPaths = [
+            'local/php_interface/**',
+            'local/modules/*/lib/**',
+            'local/modules/*/include.php',
+            'local/modules/*/install/index.php',
+        ];
 
         self::assertTrue((bool) ($config['Architecture/ThinLayerBoundary']['Enabled'] ?? false));
         self::assertSame(
@@ -136,7 +142,7 @@ YAML);
             $config['Architecture/ThinLayerBoundary']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerBoundary']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerForbiddenStaticCalls']['Enabled'] ?? false));
@@ -145,7 +151,7 @@ YAML);
             $config['Architecture/ThinLayerForbiddenStaticCalls']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerForbiddenStaticCalls']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerForbiddenFunctions']['Enabled'] ?? false));
@@ -154,7 +160,7 @@ YAML);
             $config['Architecture/ThinLayerForbiddenFunctions']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerForbiddenFunctions']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerComplexity']['Enabled'] ?? false));
@@ -163,17 +169,17 @@ YAML);
             $config['Architecture/ThinLayerComplexity']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerComplexity']['BusinessLayerPaths'] ?? [],
         );
-        self::assertTrue((bool) ($config['Architecture/ThinLayerSize']['Enabled'] ?? false));
+        self::assertTrue((bool) ($config['Architecture/ThinLayerLength']['Enabled'] ?? false));
         self::assertSame(
             ['www_data/**'],
-            $config['Architecture/ThinLayerSize']['TargetPaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
-            $config['Architecture/ThinLayerSize']['BusinessLayerPaths'] ?? [],
+            $expectedBusinessPaths,
+            $config['Architecture/ThinLayerLength']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerSuperglobalUsage']['Enabled'] ?? false));
         self::assertSame(
@@ -181,7 +187,7 @@ YAML);
             $config['Architecture/ThinLayerSuperglobalUsage']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerSuperglobalUsage']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerForbiddenMethodCalls']['Enabled'] ?? false));
@@ -190,7 +196,7 @@ YAML);
             $config['Architecture/ThinLayerForbiddenMethodCalls']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerForbiddenMethodCalls']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerGlobalStateUsage']['Enabled'] ?? false));
@@ -199,7 +205,7 @@ YAML);
             $config['Architecture/ThinLayerGlobalStateUsage']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerGlobalStateUsage']['BusinessLayerPaths'] ?? [],
         );
         self::assertTrue((bool) ($config['Architecture/ThinLayerIncludeUsage']['Enabled'] ?? false));
@@ -208,7 +214,7 @@ YAML);
             $config['Architecture/ThinLayerIncludeUsage']['TargetPaths'] ?? [],
         );
         self::assertSame(
-            ['www_data/local/php_interface/lib/**', 'www_data/local/php_interface/migrations/**'],
+            $expectedBusinessPaths,
             $config['Architecture/ThinLayerIncludeUsage']['BusinessLayerPaths'] ?? [],
         );
     }
@@ -239,7 +245,7 @@ YAML);
         );
         self::assertSame(
             ['**'],
-            $config['Architecture/ThinLayerSize']['TargetPaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['TargetPaths'] ?? [],
         );
         self::assertSame(
             ['**'],
@@ -283,7 +289,7 @@ Architecture/ThinLayerForbiddenFunctions:
 Architecture/ThinLayerComplexity:
   TargetPaths:
     - pages/**
-Architecture/ThinLayerSize:
+Architecture/ThinLayerLength:
   TargetPaths:
     - handlers/**
 Architecture/ThinLayerSuperglobalUsage:
@@ -341,15 +347,15 @@ YAML);
         );
         self::assertSame(
             ['handlers/**'],
-            $config['Architecture/ThinLayerSize']['TargetPaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['TargetPaths'] ?? [],
         );
         self::assertSame(
             ['src/Domain/**'],
-            $config['Architecture/ThinLayerSize']['BusinessLayerPaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['BusinessLayerPaths'] ?? [],
         );
         self::assertSame(
             ['vendor/**'],
-            $config['Architecture/ThinLayerSize']['ExcludePaths'] ?? [],
+            $config['Architecture/ThinLayerLength']['ExcludePaths'] ?? [],
         );
         self::assertSame(
             ['controllers/**'],
