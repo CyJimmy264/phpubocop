@@ -100,6 +100,7 @@ final class ConfigLoaderTest extends TestCase
             ['\$_SERVER\s*\[\s*["\']DOCUMENT_ROOT["\']\s*\]'],
             $config['Security/EvalAndDynamicInclude']['AllowedDynamicIncludePatterns'] ?? [],
         );
+        self::assertFalse((bool) ($config['Layout/LineLength']['IncludeInlineHtml'] ?? true));
     }
 
     public function testThinLayerChildCopCanOverrideInheritedEnabled(): void

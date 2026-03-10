@@ -76,6 +76,7 @@ final class ConfigLoader
             'Layout/LineLength' => [
                 'Enabled' => true,
                 'Max' => 120,
+                'IncludeInlineHtml' => false,
             ],
             'Layout/TrailingWhitespace' => [
                 'Enabled' => true,

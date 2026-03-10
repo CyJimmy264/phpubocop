@@ -23,10 +23,12 @@ final class TextFormatterTest extends TestCase
 
         chdir($dir);
         try {
+            putenv('NO_COLOR=1');
             $formatter = new TextFormatter();
             $output = $formatter->format([
                 new Offense('Layout/LineLength', $file, 2, 1, 'Line is too long.'),
             ], ['inspected_files' => [$file]]);
+            putenv('NO_COLOR');
         } finally {
             chdir($cwd);
         }
@@ -41,10 +43,12 @@ final class TextFormatterTest extends TestCase
         $file = $dir . '/sample.php';
         file_put_contents($file, "<?php\n");
 
+        putenv('NO_COLOR=1');
         $formatter = new TextFormatter();
         $output = $formatter->format([
             new Offense('Layout/LineLength', $file, 2, 1, 'Line is too long.'),
         ], ['inspected_files' => [$file]]);
+        putenv('NO_COLOR');
 
         self::assertStringContainsString($file . ':2:1: C: Layout/LineLength: Line is too long.', $output);
     }
@@ -119,6 +123,7 @@ final class TextFormatterTest extends TestCase
         ], ['inspected_files' => [$file]]);
 
         self::assertStringContainsString('Inspecting 1 files', $output);
+        self::assertStringContainsString("\033[0;33m[Correctable]\033[0m Prefer single-quoted strings.", $output);
         self::assertStringContainsString("\033[0;31m1\033[0m offense(s) detected", $output);
         self::assertStringContainsString(", \033[0;33m1\033[0m offense(s) autocorrectable", $output);
     }

@@ -6,6 +6,7 @@ AllCops:
 Layout/LineLength:
   Enabled: true
   Max: 120
+  IncludeInlineHtml: false
 
 Layout/TrailingCommaInMultiline:
   Enabled: true

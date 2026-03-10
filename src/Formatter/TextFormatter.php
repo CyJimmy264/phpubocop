@@ -120,7 +120,9 @@ final class TextFormatter implements FormatterInterface
 
     private function formatOffenseHeadline(Offense $offense, string $displayPath, bool $useColor): string
     {
-        $message = $offense->correctable ? '[Correctable] ' . $offense->message : $offense->message;
+        $message = $offense->correctable
+            ? $this->paint('[Correctable]', '0;33', $useColor) . ' ' . $offense->message
+            : $offense->message;
 
         return sprintf(
             '%s:%d:%d: %s: %s: %s',
