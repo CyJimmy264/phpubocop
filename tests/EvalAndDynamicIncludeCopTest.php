@@ -63,4 +63,22 @@ PHP,
 
         self::assertCount(0, $offenses);
     }
+
+    public function testAllowsDocumentRootDynamicIncludeByDefaultConfig(): void
+    {
+        $cop = new EvalAndDynamicIncludeCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+require $_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php';
+PHP,
+);
+
+        $offenses = $cop->inspect($source, [
+            'AllowedDynamicIncludePatterns' => [
+                '\$_SERVER\s*\[\s*["\']DOCUMENT_ROOT["\']\s*\]',
+            ],
+        ]);
+
+        self::assertCount(0, $offenses);
+    }
 }

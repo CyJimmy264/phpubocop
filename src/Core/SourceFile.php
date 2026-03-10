@@ -20,7 +20,8 @@ final class SourceFile
 
     public function lines(): array
     {
-        return preg_split('/\R/', $this->content) ?: [];
+        $normalized = str_replace(["\r\n", "\r"], "\n", $this->content);
+        return explode("\n", $normalized);
     }
 
     /** @return array<Node> */

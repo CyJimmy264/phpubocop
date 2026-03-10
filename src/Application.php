@@ -231,11 +231,11 @@ final class Application
     /** @param array{autocorrect:bool,autocorrectAll:bool,verbose:bool} $state */
     private function consumeToggleArg(string $arg, array &$state): bool
     {
-        if ($arg === '--autocorrect') {
+        if ($arg === '--autocorrect' || $arg === '-a') {
             $state['autocorrect'] = true;
             return true;
         }
-        if ($arg === '--autocorrect-all') {
+        if ($arg === '--autocorrect-all' || $arg === '-A') {
             $state['autocorrect'] = true;
             $state['autocorrectAll'] = true;
             return true;
@@ -306,18 +306,48 @@ final class Application
     /** @return array{path:string,source:string}|null */
     private function findTargetConfigPath(string $targetPath): ?array
     {
-        if (is_dir($targetPath)) {
-            $candidate = rtrim($targetPath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '.phpubocop.yml';
+        $startDir = $this->targetConfigSearchStartDir($targetPath);
+        if ($startDir === null) {
+            return null;
+        }
+
+        $configDir = $this->nearestConfigDir($startDir);
+        if ($configDir === null) {
+            return null;
+        }
+
+        return [
+            'path' => $configDir . DIRECTORY_SEPARATOR . '.phpubocop.yml',
+            'source' => $configDir === $startDir ? 'target_directory' : 'target_ancestor_directory',
+        ];
+    }
+
+    private function nearestConfigDir(string $startDir): ?string
+    {
+        $currentDir = $startDir;
+        while (true) {
+            $candidate = $currentDir . DIRECTORY_SEPARATOR . '.phpubocop.yml';
             if (is_file($candidate)) {
-                return ['path' => $candidate, 'source' => 'target_directory'];
+                return $currentDir;
             }
+
+            $parentDir = dirname($currentDir);
+            if ($parentDir === $currentDir) {
+                return null;
+            }
+
+            $currentDir = $parentDir;
+        }
+    }
+
+    private function targetConfigSearchStartDir(string $targetPath): ?string
+    {
+        if (is_dir($targetPath)) {
+            return rtrim($targetPath, DIRECTORY_SEPARATOR);
         }
 
         if (is_file($targetPath)) {
-            $candidate = dirname($targetPath) . DIRECTORY_SEPARATOR . '.phpubocop.yml';
-            if (is_file($candidate)) {
-                return ['path' => $candidate, 'source' => 'target_file_directory'];
-            }
+            return dirname($targetPath);
         }
 
         return null;
@@ -338,7 +368,7 @@ PHPuboCop - RuboCop-inspired linter for PHP
 
 Usage:
   phpubocop [path ...] [--config=.phpubocop.yml] [--profile=bitrix]
-            [--format=text|json] [--autocorrect] [--autocorrect-all] [--verbose]
+            [--format=text|json] [--autocorrect|-a] [--autocorrect-all|-A] [--verbose|-v]
 
 Examples:
   phpubocop src
@@ -346,7 +376,9 @@ Examples:
   phpubocop . --profile=bitrix
   phpubocop . --format=json
   phpubocop src --autocorrect
+  phpubocop src -a
   phpubocop src --autocorrect-all
+  phpubocop src -A
   phpubocop src --verbose
 
 TXT;

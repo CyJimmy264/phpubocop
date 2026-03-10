@@ -159,7 +159,7 @@ YAML,
             'phpubocop',
             $file,
             '--config=' . $config,
-            '--autocorrect',
+            '-a',
         ]);
         ob_end_clean();
 
@@ -167,6 +167,24 @@ YAML,
 
         self::assertSame(0, $exitCode);
         self::assertStringContainsString("'b' => 2,", $content);
+    }
+
+    public function testShortAutocorrectFlagsAreParsed(): void
+    {
+        $app = new Application();
+        $method = new \ReflectionMethod($app, 'parseArgs');
+        $method->setAccessible(true);
+
+        $safe = $method->invoke($app, ['phpubocop', 'src', '-a']);
+        $unsafe = $method->invoke($app, ['phpubocop', 'src', '-A']);
+
+        self::assertSame(['src'], $safe[0]);
+        self::assertTrue($safe[4]);
+        self::assertFalse($safe[5]);
+
+        self::assertSame(['src'], $unsafe[0]);
+        self::assertTrue($unsafe[4]);
+        self::assertTrue($unsafe[5]);
     }
 
     public function testLoadsConfigFromCurrentWorkingDirectoryWhenConfigFlagIsNotProvided(): void
@@ -228,6 +246,53 @@ YAML,
         $app = new Application();
 
         chdir($dir);
+        try {
+            ob_start();
+            $exitCode = $app->run([
+                'phpubocop',
+                $file,
+            ]);
+            ob_end_clean();
+        } finally {
+            chdir($cwd);
+        }
+
+        self::assertSame(0, $exitCode);
+    }
+
+    public function testLoadsConfigFromTargetAncestorDirectoryForSingleFileTarget(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_cfg_ancestor_' . uniqid('', true);
+        $targetDir = $dir . '/www_data/product';
+        $cwdDir = $dir . '/cwd';
+        mkdir($targetDir, 0777, true);
+        mkdir($cwdDir, 0777, true);
+
+        $file = $targetDir . '/sample.php';
+        $cwd = getcwd();
+        self::assertIsString($cwd);
+
+        file_put_contents($file, <<<'PHP'
+<?php
+require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php');
+PHP,
+);
+        file_put_contents($dir . '/.phpubocop.yml', <<<'YAML'
+Security/EvalAndDynamicInclude:
+  Enabled: true
+  AllowedDynamicIncludePatterns:
+    - "\\$_SERVER\\s*\\[\\s*[\"']DOCUMENT_ROOT[\"']\\s*\\]"
+YAML,
+);
+        file_put_contents($cwdDir . '/.phpubocop.yml', <<<'YAML'
+Security/EvalAndDynamicInclude:
+  Enabled: true
+YAML,
+);
+
+        $app = new Application();
+
+        chdir($cwdDir);
         try {
             ob_start();
             $exitCode = $app->run([

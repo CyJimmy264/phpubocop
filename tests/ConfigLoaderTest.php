@@ -96,6 +96,10 @@ final class ConfigLoaderTest extends TestCase
             ['vendor/**'],
             $config['Architecture/ThinLayerIncludeUsage']['ExcludePaths'] ?? [],
         );
+        self::assertSame(
+            ['\$_SERVER\s*\[\s*["\']DOCUMENT_ROOT["\']\s*\]'],
+            $config['Security/EvalAndDynamicInclude']['AllowedDynamicIncludePatterns'] ?? [],
+        );
     }
 
     public function testThinLayerChildCopCanOverrideInheritedEnabled(): void

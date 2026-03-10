@@ -15,17 +15,27 @@ final class TextFormatter implements FormatterInterface
         $inspectedFiles = $this->inspectedFiles($context);
         $useColor = getenv('NO_COLOR') === false;
         $parts = [
+            $this->buildInspectionHeader(count($inspectedFiles)),
             $this->buildProgressPart($inspectedFiles, $offenses, $useColor),
-            $this->formatOffenses($offenses, $this->normalizedCwd()),
+            $this->formatOffenses($offenses, $this->normalizedCwd(), $useColor),
             $this->buildSummary(
-            count($inspectedFiles),
-            count($offenses),
-            $this->countOffendingFiles($offenses),
-            $useColor,
+                count($inspectedFiles),
+                count($offenses),
+                $this->countCorrectableOffenses($offenses),
+                $useColor,
             ),
         ];
 
         return implode(PHP_EOL . PHP_EOL, array_filter($parts, static fn (string $p): bool => $p !== '')) . PHP_EOL;
+    }
+
+    private function buildInspectionHeader(int $fileCount): string
+    {
+        if ($fileCount === 0) {
+            return '';
+        }
+
+        return sprintf('Inspecting %d files', $fileCount);
     }
 
     private function relativePathFromCwd(string $path, ?string $normalizedCwd): string
@@ -73,33 +83,94 @@ final class TextFormatter implements FormatterInterface
     }
 
     /** @param list<Offense> $offenses */
-    private function formatOffenses(array $offenses, ?string $normalizedCwd): string
+    private function formatOffenses(array $offenses, ?string $normalizedCwd, bool $useColor): string
     {
         if ($offenses === []) {
             return '';
         }
 
-        $lines = [];
+        $blocks = [];
         foreach ($offenses as $offense) {
             $displayPath = $this->relativePathFromCwd($offense->file, $normalizedCwd);
-            $lines[] = sprintf(
-                '%s:%d:%d: %s: %s (%s)',
-                $displayPath,
-                $offense->line,
-                $offense->column,
-                $offense->severity,
-                $offense->message,
-                $offense->copName,
-            );
+            $blocks[] = $this->formatOffenseBlock($offense, $displayPath, $useColor);
         }
 
-        return implode(PHP_EOL, $lines);
+        return implode(PHP_EOL, $blocks);
     }
 
     /** @param list<Offense> $offenses */
-    private function countOffendingFiles(array $offenses): int
+    private function countCorrectableOffenses(array $offenses): int
     {
-        return count(array_unique(array_map(static fn (Offense $offense): string => $offense->file, $offenses)));
+        return count(array_filter($offenses, static fn (Offense $offense): bool => $offense->correctable));
+    }
+
+    private function formatOffenseBlock(Offense $offense, string $displayPath, bool $useColor): string
+    {
+        $parts = [
+            $this->formatOffenseHeadline($offense, $displayPath, $useColor),
+        ];
+
+        $snippet = $this->formatOffenseSnippet($offense, $useColor);
+        if ($snippet !== null) {
+            $parts[] = $snippet;
+        }
+
+        return implode(PHP_EOL, $parts);
+    }
+
+    private function formatOffenseHeadline(Offense $offense, string $displayPath, bool $useColor): string
+    {
+        $message = $offense->correctable ? '[Correctable] ' . $offense->message : $offense->message;
+
+        return sprintf(
+            '%s:%d:%d: %s: %s: %s',
+            $this->paint($displayPath, '0;36', $useColor),
+            $offense->line,
+            $offense->column,
+            $this->severityLetter($offense->severity, $useColor),
+            $offense->copName,
+            $message,
+        );
+    }
+
+    private function formatOffenseSnippet(Offense $offense, bool $useColor): ?string
+    {
+        $sourceLine = $this->readSourceLine($offense->file, $offense->line);
+        if ($sourceLine === null) {
+            return null;
+        }
+
+        $trimmed = rtrim($sourceLine, "\r\n");
+        $caretLine = $this->caretLine($trimmed, $offense->column);
+
+        return sprintf(
+            '%s%s%s',
+            $trimmed,
+            PHP_EOL,
+            $this->paint($caretLine, '0;33', $useColor),
+        );
+    }
+
+    private function readSourceLine(string $file, int $line): ?string
+    {
+        if (!is_readable($file)) {
+            return null;
+        }
+
+        $lines = file($file);
+        if (!is_array($lines) || !isset($lines[$line - 1])) {
+            return null;
+        }
+
+        return (string) $lines[$line - 1];
+    }
+
+    private function caretLine(string $sourceLine, int $column): string
+    {
+        $prefixLength = max(0, $column - 1);
+        $prefix = substr($sourceLine, 0, $prefixLength);
+
+        return str_repeat(' ', strlen($prefix ?: '')) . '^';
     }
 
     /** @param list<string> $inspectedFiles @param list<Offense> $offenses */
@@ -126,7 +197,12 @@ final class TextFormatter implements FormatterInterface
         return implode(PHP_EOL, $this->wrapProgressChars($chars));
     }
 
-    private function buildSummary(int $fileCount, int $offenseCount, int $offendingFileCount, bool $useColor): string
+    private function buildSummary(
+        int $fileCount,
+        int $offenseCount,
+        int $correctableCount,
+        bool $useColor,
+    ): string
     {
         if ($offenseCount === 0) {
             return sprintf(
@@ -136,12 +212,20 @@ final class TextFormatter implements FormatterInterface
             );
         }
 
-        return sprintf(
-            '%d files inspected, %d offense(s) detected in %d file(s)',
+        $summary = sprintf(
+            '%d files inspected, %s offense(s) detected',
             $fileCount,
-            $offenseCount,
-            $offendingFileCount,
+            $this->paint((string) $offenseCount, '0;31', $useColor),
         );
+
+        if ($correctableCount > 0) {
+            $summary .= sprintf(
+                ', %s offense(s) autocorrectable',
+                $this->paint((string) $correctableCount, '0;33', $useColor),
+            );
+        }
+
+        return $summary;
     }
 
     private function severityRank(string $severity): int
@@ -200,6 +284,17 @@ final class TextFormatter implements FormatterInterface
         };
 
         return $this->paint($char, $color, $useColor);
+    }
+
+    private function severityLetter(string $severity, bool $useColor): string
+    {
+        return match (strtolower($severity)) {
+            'fatal' => $this->paint('F', '0;31', $useColor),
+            'error' => $this->paint('E', '0;31', $useColor),
+            'warning' => $this->paint('W', '0;35', $useColor),
+            'refactor' => $this->paint('R', '0;36', $useColor),
+            default => $this->paint('C', '0;33', $useColor),
+        };
     }
 
     /** @param list<string> $chars @return list<string> */

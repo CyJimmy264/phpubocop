@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace PHPuboCop\Core;
 
 use PHPuboCop\Cop\CopInterface;
+use PHPuboCop\Cop\AutocorrectableCopInterface;
+use PHPuboCop\Cop\SafeAutocorrectableCopInterface;
 use PHPuboCop\Util\FileFinder;
 
 final class Runner
@@ -82,8 +84,10 @@ final class Runner
                 continue;
             }
 
+            $correctable = $cop instanceof AutocorrectableCopInterface;
+            $safeAutocorrect = $cop instanceof SafeAutocorrectableCopInterface;
             foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
-                $offenses[] = $offense;
+                $offenses[] = $offense->withAutocorrect($correctable, $safeAutocorrect);
             }
         }
 

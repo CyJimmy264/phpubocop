@@ -144,7 +144,9 @@ final class ConfigLoader
             ],
             'Security/EvalAndDynamicInclude' => [
                 'Enabled' => true,
-                'AllowedDynamicIncludePatterns' => [],
+                'AllowedDynamicIncludePatterns' => [
+                    '\$_SERVER\s*\[\s*["\']DOCUMENT_ROOT["\']\s*\]',
+                ],
             ],
             'Architecture/ThinLayerBoundary' => [
                 'Enabled' => false,
