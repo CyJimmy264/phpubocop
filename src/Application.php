@@ -11,6 +11,7 @@ use PHPuboCop\Core\Offense;
 use PHPuboCop\Core\Runner;
 use PHPuboCop\Formatter\FormatterInterface;
 use PHPuboCop\Formatter\JsonFormatter;
+use PHPuboCop\Formatter\ProgressReporter;
 use PHPuboCop\Formatter\TextFormatter;
 
 final class Application
@@ -26,6 +27,7 @@ final class Application
         $runner = new Runner($cops);
         $offenses = [];
         $inspectedFiles = [];
+        $progress = $this->progressReporter($format);
         $runContext = [
             'configPath' => $configPath,
             'profile' => $profile,
@@ -35,10 +37,17 @@ final class Application
             'cops' => $cops,
             'configLoader' => $configLoader,
             'runner' => $runner,
+            'progress' => $progress,
         ];
+
+        $progress?->start();
 
         foreach ($paths as $path) {
             $this->runForPath($path, $runContext, $offenses, $inspectedFiles);
+        }
+
+        if ($progress !== null) {
+            $progress->finish();
         }
 
         return $this->finalizeRun($offenses, $inspectedFiles, $format);
@@ -53,7 +62,8 @@ final class Application
      *   verbose:bool,
      *   cops:list<object>,
      *   configLoader:ConfigLoader,
-     *   runner:Runner
+     *   runner:Runner,
+     *   progress:?ProgressReporter
      * } $context
      * @param list<Offense> $offenses
      * @param array<string,bool> $inspectedFiles
@@ -70,7 +80,7 @@ final class Application
         $this->runAutocorrectIfEnabled($path, $config, $context);
         $this->printBitrixProfileHintIfNeeded($path, $config, $context['profile']);
         $this->printVerboseConfigIfEnabled($path, $resolvedConfig, $config, $context['verbose']);
-        $this->collectOffensesFromRunner($context['runner'], $path, $config, $offenses);
+        $this->collectOffensesFromRunner($context['runner'], $path, $config, $offenses, $context['progress']);
 
         $this->collectInspectedFiles($context['runner']->lastInspectedFiles(), $inspectedFiles);
 
@@ -297,10 +307,31 @@ final class Application
         string $path,
         array $config,
         array &$offenses,
+        ?ProgressReporter $progress,
     ): void {
-        foreach ($runner->run($path, $config) as $offense) {
+        $runOffenses = $runner->run(
+            $path,
+            $config,
+            static function (string $filePath, array $fileOffenses) use ($progress): void {
+                if ($progress === null) {
+                    return;
+                }
+
+                $progress->advance($fileOffenses);
+            },
+        );
+        foreach ($runOffenses as $offense) {
             $offenses[] = $offense;
         }
+    }
+
+    private function progressReporter(string $format): ?ProgressReporter
+    {
+        if ($format !== 'text') {
+            return null;
+        }
+
+        return new ProgressReporter(getenv('NO_COLOR') === false);
     }
 
     /** @return array{path:string,source:string}|null */

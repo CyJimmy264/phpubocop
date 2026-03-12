@@ -173,6 +173,85 @@ YAML,
         self::assertStringContainsString("'b' => 2,", $content);
     }
 
+    public function testTextOutputPrintsRealtimeProgress(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_progress_' . uniqid('', true);
+        mkdir($dir, 0777, true);
+
+        $file = $dir . '/sample.php';
+        $config = $dir . '/.phpubocop.yml';
+
+        file_put_contents($file, "<?php\n\$a = \"hello\";\n");
+        file_put_contents($config, <<<'YAML'
+Layout/LineLength:
+  Enabled: false
+Layout/TrailingWhitespace:
+  Enabled: false
+Layout/TrailingCommaInMultiline:
+  Enabled: false
+Layout/IndentationStyle:
+  Enabled: false
+Lint/DuplicateArrayKey:
+  Enabled: false
+Lint/DuplicateMethod:
+  Enabled: false
+Lint/EvalUsage:
+  Enabled: false
+Lint/SuppressedError:
+  Enabled: false
+Lint/ShadowingVariable:
+  Enabled: false
+Lint/UnreachableCode:
+  Enabled: false
+Lint/UselessAssignment:
+  Enabled: false
+Lint/UnusedVariable:
+  Enabled: false
+Metrics/AbcSize:
+  Enabled: false
+Metrics/CyclomaticComplexity:
+  Enabled: false
+Metrics/MethodLength:
+  Enabled: false
+Metrics/PerceivedComplexity:
+  Enabled: false
+Metrics/ParameterLists:
+  Enabled: false
+Style/DoubleQuotes:
+  Enabled: true
+Style/EmptyCatch:
+  Enabled: false
+Style/MultilineTernary:
+  Enabled: false
+Style/BooleanLiteralComparison:
+  Enabled: false
+Style/StrictComparison:
+  Enabled: false
+Security/Unserialize:
+  Enabled: false
+Security/Exec:
+  Enabled: false
+Security/EvalAndDynamicInclude:
+  Enabled: false
+YAML,
+);
+
+        putenv('NO_COLOR=1');
+        $app = new Application();
+
+        ob_start();
+        $exitCode = $app->run([
+            'phpubocop',
+            $file,
+            '--config=' . $config,
+        ]);
+        $output = (string) ob_get_clean();
+        putenv('NO_COLOR');
+
+        self::assertSame(1, $exitCode);
+        self::assertStringContainsString("Inspecting files\n\nC\n\n", $output);
+    }
+
     public function testShortAutocorrectFlagsAreParsed(): void
     {
         $app = new Application();

@@ -30,14 +30,14 @@ final class Runner
     }
 
     /** @return list<Offense> */
-    public function run(string $path, array $config): array
+    public function run(string $path, array $config, ?callable $afterFile = null): array
     {
         $discovery = $this->fileFinder->findWithStats($path, $config);
         $files = $discovery['files'];
         $this->lastInspectedFiles = $files;
         $this->lastFileStats = $discovery['stats'];
 
-        return $this->sortedOffenses($this->collectOffensesForFiles($files, $config));
+        return $this->sortedOffenses($this->collectOffensesForFiles($files, $config, $afterFile));
     }
 
     public function lastFileStats(): array
@@ -61,12 +61,17 @@ final class Runner
     }
 
     /** @param list<string> $files @return list<Offense> */
-    private function collectOffensesForFiles(array $files, array $config): array
+    private function collectOffensesForFiles(array $files, array $config, ?callable $afterFile): array
     {
         $offenses = [];
         foreach ($files as $filePath) {
-            foreach ($this->inspectFile($filePath, $config) as $offense) {
+            $fileOffenses = $this->inspectFile($filePath, $config);
+            foreach ($fileOffenses as $offense) {
                 $offenses[] = $offense;
+            }
+
+            if ($afterFile !== null) {
+                $afterFile($filePath, $fileOffenses);
             }
         }
 

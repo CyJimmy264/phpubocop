@@ -53,7 +53,7 @@ final class TextFormatterTest extends TestCase
         self::assertStringContainsString($file . ':2:1: C: Layout/LineLength: Line is too long.', $output);
     }
 
-    public function testBuildsProgressSummaryLikeRuboCop(): void
+    public function testBuildsSummaryWithoutProgressHeader(): void
     {
         $dir = sys_get_temp_dir() . '/phpubocop_formatter_progress_' . uniqid('', true);
         mkdir($dir, 0777, true);
@@ -69,7 +69,8 @@ final class TextFormatterTest extends TestCase
         ], ['inspected_files' => [$fileOne, $fileTwo]]);
         putenv('NO_COLOR');
 
-        self::assertStringContainsString("Inspecting 2 files\n\n.W\n\n", $output);
+        self::assertStringNotContainsString('Inspecting 2 files', $output);
+        self::assertStringNotContainsString(".W\n\n", $output);
         self::assertStringContainsString('2 files inspected, 1 offense(s) detected', $output);
     }
 
@@ -122,7 +123,6 @@ final class TextFormatterTest extends TestCase
             new Offense('Style/DoubleQuotes', $file, 2, 1, 'Prefer single-quoted strings.', 'convention', true, true),
         ], ['inspected_files' => [$file]]);
 
-        self::assertStringContainsString('Inspecting 1 files', $output);
         self::assertStringContainsString("\033[0;33m[Correctable]\033[0m Prefer single-quoted strings.", $output);
         self::assertStringContainsString("\033[0;31m1\033[0m offense(s) detected", $output);
         self::assertStringContainsString(", \033[0;33m1\033[0m offense(s) autocorrectable", $output);

@@ -8,15 +8,11 @@ use PHPuboCop\Core\Offense;
 
 final class TextFormatter implements FormatterInterface
 {
-    private const PROGRESS_LINE_WIDTH = 80;
-
     public function format(array $offenses, array $context = []): string
     {
         $inspectedFiles = $this->inspectedFiles($context);
         $useColor = getenv('NO_COLOR') === false;
         $parts = [
-            $this->buildInspectionHeader(count($inspectedFiles)),
-            $this->buildProgressPart($inspectedFiles, $offenses, $useColor),
             $this->formatOffenses($offenses, $this->normalizedCwd(), $useColor),
             $this->buildSummary(
                 count($inspectedFiles),
@@ -27,15 +23,6 @@ final class TextFormatter implements FormatterInterface
         ];
 
         return implode(PHP_EOL . PHP_EOL, array_filter($parts, static fn (string $p): bool => $p !== '')) . PHP_EOL;
-    }
-
-    private function buildInspectionHeader(int $fileCount): string
-    {
-        if ($fileCount === 0) {
-            return '';
-        }
-
-        return sprintf('Inspecting %d files', $fileCount);
     }
 
     private function relativePathFromCwd(string $path, ?string $normalizedCwd): string
@@ -176,30 +163,6 @@ final class TextFormatter implements FormatterInterface
         return str_repeat(' ', strlen($prefix ?: '')) . '^';
     }
 
-    /** @param list<string> $inspectedFiles @param list<Offense> $offenses */
-    private function buildProgressPart(array $inspectedFiles, array $offenses, bool $useColor): string
-    {
-        if ($inspectedFiles === []) {
-            return '';
-        }
-
-        return $this->buildProgressLine($inspectedFiles, $offenses, $useColor);
-    }
-
-    /** @param list<string> $inspectedFiles @param list<Offense> $offenses */
-    private function buildProgressLine(array $inspectedFiles, array $offenses, bool $useColor): string
-    {
-        $byFile = $this->highestSeverityByFile($offenses);
-
-        $chars = [];
-        foreach ($inspectedFiles as $inspectedFile) {
-            $severity = $byFile[$inspectedFile] ?? null;
-            $chars[] = $this->progressChar($severity, $useColor);
-        }
-
-        return implode(PHP_EOL, $this->wrapProgressChars($chars));
-    }
-
     private function buildSummary(
         int $fileCount,
         int $offenseCount,
@@ -251,44 +214,6 @@ final class TextFormatter implements FormatterInterface
         return sprintf("\033[%sm%s\033[0m", $ansi, $text);
     }
 
-    /** @param list<Offense> $offenses @return array<string,string> */
-    private function highestSeverityByFile(array $offenses): array
-    {
-        $byFile = [];
-        foreach ($offenses as $offense) {
-            $offenseFile = $offense->file;
-            $severity = strtolower($offense->severity);
-
-            if (!isset($byFile[$offenseFile])) {
-                $byFile[$offenseFile] = $severity;
-                continue;
-            }
-
-            if ($this->severityRank($severity) > $this->severityRank($byFile[$offenseFile])) {
-                $byFile[$offenseFile] = $severity;
-            }
-        }
-
-        return $byFile;
-    }
-
-    private function progressChar(?string $severity, bool $useColor): string
-    {
-        if ($severity === null) {
-            return $this->paint('.', '0;32', $useColor);
-        }
-
-        [$char, $color] = match ($severity) {
-            'fatal' => ['F', '0;31'],
-            'error' => ['E', '0;31'],
-            'warning' => ['W', '0;35'],
-            'refactor' => ['R', '0;36'],
-            default => ['C', '0;33'],
-        };
-
-        return $this->paint($char, $color, $useColor);
-    }
-
     private function severityLetter(string $severity, bool $useColor): string
     {
         return match (strtolower($severity)) {
@@ -298,31 +223,5 @@ final class TextFormatter implements FormatterInterface
             'refactor' => $this->paint('R', '0;36', $useColor),
             default => $this->paint('C', '0;33', $useColor),
         };
-    }
-
-    /** @param list<string> $chars @return list<string> */
-    private function wrapProgressChars(array $chars): array
-    {
-        $wrapped = [];
-        $current = '';
-        foreach ($chars as $char) {
-            $current .= $char;
-            if ($this->visibleLength($current) >= self::PROGRESS_LINE_WIDTH) {
-                $wrapped[] = $current;
-                $current = '';
-            }
-        }
-
-        if ($current !== '') {
-            $wrapped[] = $current;
-        }
-
-        return $wrapped;
-    }
-
-    private function visibleLength(string $text): int
-    {
-        $withoutAnsi = preg_replace('/\e\[[\d;]*m/', '', $text);
-        return strlen($withoutAnsi ?? $text);
     }
 }
