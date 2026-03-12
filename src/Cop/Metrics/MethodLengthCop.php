@@ -20,6 +20,8 @@ final class MethodLengthCop implements CopInterface
     private array $countAsOneOptions = [];
     /** @var array<int,bool> */
     private array $foldedLines = [];
+    /** @var array<int,bool> */
+    private array $significantLines = [];
 
     public function name(): string
     {
@@ -59,7 +61,7 @@ final class MethodLengthCop implements CopInterface
         array $countAsOne,
         array &$offenses,
     ): void {
-        $length = $this->scopeLength($scope, $countAsOne);
+        $length = $this->scopeLength($scope, $file, $countAsOne);
         if ($length <= $max) {
             return;
         }
@@ -80,7 +82,7 @@ final class MethodLengthCop implements CopInterface
             || $node instanceof Expr\Closure;
     }
 
-    private function scopeLength(Node $node, array $countAsOne): int
+    private function scopeLength(Node $node, SourceFile $file, array $countAsOne): int
     {
         $this->scopeStartLine = (int) $node->getStartLine();
         $this->scopeEndLine = (int) $node->getEndLine();
@@ -88,15 +90,58 @@ final class MethodLengthCop implements CopInterface
             return 0;
         }
 
-        $baseLength = $this->scopeEndLine - $this->scopeStartLine + 1;
+        $this->significantLines = $this->scopeSignificantLines($file);
+        $baseLength = count($this->significantLines);
         $this->countAsOneOptions = $countAsOne;
-        if ($this->countAsOneOptions === []) {
+        if ($this->countAsOneOptions === [] || $baseLength === 0) {
             return $baseLength;
         }
 
         $this->foldedLines = [];
         $this->collectFoldedLines($node);
         return max(0, $baseLength - count($this->foldedLines));
+    }
+
+    /** @return array<int,bool> */
+    private function scopeSignificantLines(SourceFile $file): array
+    {
+        $lines = [];
+        foreach (token_get_all($file->content) as $token) {
+            if (!is_array($token)) {
+                continue;
+            }
+
+            [$tokenId, $text, $line] = $token;
+            if ($this->ignoredScopeToken($tokenId)) {
+                continue;
+            }
+
+            $line = (int) $line;
+            $lineCount = substr_count((string) $text, "\n");
+            for ($offset = 0; $offset <= $lineCount; $offset++) {
+                $currentLine = $line + $offset;
+                if ($currentLine < $this->scopeStartLine || $currentLine > $this->scopeEndLine) {
+                    continue;
+                }
+
+                $lines[$currentLine] = true;
+            }
+        }
+
+        return $lines;
+    }
+
+    private function ignoredScopeToken(int $tokenId): bool
+    {
+        return in_array($tokenId, [
+            T_WHITESPACE,
+            T_COMMENT,
+            T_DOC_COMMENT,
+            T_OPEN_TAG,
+            T_OPEN_TAG_WITH_ECHO,
+            T_CLOSE_TAG,
+            T_INLINE_HTML,
+        ], true);
     }
 
     private function collectFoldedLines(Node $node): void
@@ -115,7 +160,9 @@ final class MethodLengthCop implements CopInterface
         $nodeStart = max((int) $node->getStartLine(), $this->scopeStartLine);
         $nodeEnd = min((int) $node->getEndLine(), $this->scopeEndLine);
         for ($line = $nodeStart + 1; $line <= $nodeEnd; $line++) {
-            $this->foldedLines[$line] = true;
+            if (isset($this->significantLines[$line])) {
+                $this->foldedLines[$line] = true;
+            }
         }
     }
 

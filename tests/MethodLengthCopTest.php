@@ -24,7 +24,7 @@ function demo() {
 PHP,
 );
 
-        $offenses = $cop->inspect($source, ['Max' => 5]);
+        $offenses = $cop->inspect($source, ['Max' => 4]);
 
         self::assertCount(1, $offenses);
         self::assertSame('Metrics/MethodLength', $offenses[0]->copName);
@@ -61,8 +61,8 @@ function demo() {
 PHP,
 );
 
-        $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
-        $with = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['array']]);
+        $without = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => []]);
+        $with = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => ['array']]);
 
         self::assertCount(1, $without);
         self::assertCount(0, $with);
@@ -83,7 +83,7 @@ function demo() {
 PHP,
 );
 
-        $offenses = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['hash']]);
+        $offenses = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => ['hash']]);
 
         self::assertCount(0, $offenses);
     }
@@ -103,8 +103,8 @@ TXT;
 PHP,
 );
 
-        $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
-        $with = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['heredoc']]);
+        $without = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => []]);
+        $with = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => ['heredoc']]);
 
         self::assertCount(1, $without);
         self::assertCount(0, $with);
@@ -125,8 +125,8 @@ function demo($service) {
 PHP,
 );
 
-        $without = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => []]);
-        $with = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['call_chain']]);
+        $without = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => []]);
+        $with = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => ['call_chain']]);
 
         self::assertCount(1, $without);
         self::assertCount(0, $with);
@@ -147,7 +147,31 @@ function demo($service) {
 PHP,
 );
 
-        $offenses = $cop->inspect($source, ['Max' => 6, 'CountAsOne' => ['method_call']]);
+        $offenses = $cop->inspect($source, ['Max' => 4, 'CountAsOne' => ['method_call']]);
+
+        self::assertCount(0, $offenses);
+    }
+
+    public function testIgnoresBlankLinesAndCommentsInMethodLength(): void
+    {
+        $cop = new MethodLengthCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+function demo() {
+    $a = 1;
+
+    // spacer comment
+    /*
+     * block comment
+     */
+    $b = 2;
+
+    return $a + $b;
+}
+PHP,
+);
+
+        $offenses = $cop->inspect($source, ['Max' => 5]);
 
         self::assertCount(0, $offenses);
     }
