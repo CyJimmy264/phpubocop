@@ -77,6 +77,7 @@ final class Runner
     private function inspectFile(string $filePath, array $config): array
     {
         $sourceFile = new SourceFile($filePath, (string) file_get_contents($filePath));
+        $suppressionMap = new InlineSuppressionMap($sourceFile);
         $offenses = [];
         foreach ($this->cops as $cop) {
             $copConfig = $config[$cop->name()] ?? [];
@@ -84,14 +85,30 @@ final class Runner
                 continue;
             }
 
-            $correctable = $cop instanceof AutocorrectableCopInterface;
-            $safeAutocorrect = $cop instanceof SafeAutocorrectableCopInterface;
-            foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
-                $offenses[] = $offense->withAutocorrect($correctable, $safeAutocorrect);
-            }
+            $this->appendCopOffenses($offenses, $cop, $sourceFile, $copConfig, $suppressionMap);
         }
 
         return $offenses;
+    }
+
+    /** @param list<Offense> $offenses */
+    private function appendCopOffenses(
+        array &$offenses,
+        CopInterface $cop,
+        SourceFile $sourceFile,
+        array $copConfig,
+        InlineSuppressionMap $suppressionMap,
+    ): void {
+        $correctable = $cop instanceof AutocorrectableCopInterface;
+        $safeAutocorrect = $cop instanceof SafeAutocorrectableCopInterface;
+        foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
+            $annotated = $offense->withAutocorrect($correctable, $safeAutocorrect);
+            if ($suppressionMap->suppresses($annotated)) {
+                continue;
+            }
+
+            $offenses[] = $annotated;
+        }
     }
 
     /** @param list<Offense> $offenses @return list<Offense> */
