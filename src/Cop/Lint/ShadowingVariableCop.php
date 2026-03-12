@@ -27,25 +27,17 @@ final class ShadowingVariableCop implements CopInterface
     public function inspect(SourceFile $file, array $config = []): array
     {
         $offenses = [];
-        foreach ($file->ast() as $node) {
-            $this->collectOffenses($node, $file->path, $offenses);
-        }
+        foreach ($file->astNodes() as $node) {
+            if (!$this->isScope($node)) {
+                continue;
+            }
 
-        return $offenses;
-    }
-
-    /** @param list<Offense> $offenses */
-    private function collectOffenses(Node $node, string $path, array &$offenses): void
-    {
-        if ($this->isScope($node)) {
-            foreach ($this->analyzeScope($node, $path) as $scopeOffense) {
+            foreach ($this->analyzeScope($node, $file->path) as $scopeOffense) {
                 $offenses[] = $scopeOffense;
             }
         }
 
-        foreach ($this->childNodesOf($node) as $child) {
-            $this->collectOffenses($child, $path, $offenses);
-        }
+        return $offenses;
     }
 
     /** @return list<Offense> */

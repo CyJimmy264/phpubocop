@@ -33,27 +33,15 @@ final class UnusedVariableCop implements CopInterface
         $this->ignoreParameters = (bool) ($config['IgnoreParameters'] ?? true);
 
         $offenses = [];
-        foreach ($file->ast() as $node) {
-            $this->collectOffenses($node, $file, $offenses, $ignorePrefixedUnderscore);
-        }
+        foreach ($file->astNodes() as $node) {
+            if (!$this->isScope($node)) {
+                continue;
+            }
 
-        return $offenses;
-    }
-
-    /** @param list<Offense> $offenses */
-    private function collectOffenses(
-        Node $node,
-        SourceFile $file,
-        array &$offenses,
-        bool $ignorePrefixedUnderscore,
-    ): void {
-        if ($this->isScope($node)) {
             $this->appendScopeOffenses($node, $file, $offenses, $ignorePrefixedUnderscore);
         }
 
-        foreach ($this->childNodesOf($node) as $child) {
-            $this->collectOffenses($child, $file, $offenses, $ignorePrefixedUnderscore);
-        }
+        return $offenses;
     }
 
     /** @param list<Offense> $offenses */
@@ -92,20 +80,26 @@ final class UnusedVariableCop implements CopInterface
 
     private function visitScopeNode(Node $node, Node $scope): void
     {
-        if ($this->shouldSkipNodeInCurrentScope($node, $scope)) {
-            return;
-        }
+        $stack = [$node];
+        while ($stack !== []) {
+            $current = array_pop($stack);
+            if (!$current instanceof Node) {
+                continue;
+            }
 
-        if ($this->handleNodeByType($node, $scope)) {
-            return;
-        }
+            if ($this->shouldSkipNodeInCurrentScope($current, $scope)) {
+                continue;
+            }
 
-        if ($node instanceof Expr\FuncCall && $node->name instanceof Node\Name) {
-            $this->handleFunctionCallNode($node);
-        }
+            if ($this->handleNodeByType($current, $scope, $stack)) {
+                continue;
+            }
 
-        foreach ($this->childNodesOf($node) as $child) {
-            $this->visitScopeNode($child, $scope);
+            if ($current instanceof Expr\FuncCall && $current->name instanceof Node\Name) {
+                $this->handleFunctionCallNode($current);
+            }
+
+            $this->pushChildren($stack, $this->childNodesOf($current));
         }
     }
 
@@ -114,41 +108,45 @@ final class UnusedVariableCop implements CopInterface
         return $node !== $scope && $this->isScope($node);
     }
 
-    private function handleNodeByType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleNodeByType(Node $node, Node $scope, array &$stack): bool
     {
-        return $this->handleParamType($node, $scope)
-            || $this->handleAssignType($node, $scope)
-            || $this->handleAssignOpType($node, $scope)
+        return $this->handleParamType($node, $stack)
+            || $this->handleAssignType($node, $stack)
+            || $this->handleAssignOpType($node, $stack)
             || $this->handleIncDecType($node)
-            || $this->handleForeachType($node, $scope)
-            || $this->handleCatchType($node, $scope)
-            || $this->handleVariableType($node, $scope);
+            || $this->handleForeachType($node, $stack)
+            || $this->handleCatchType($node, $stack)
+            || $this->handleVariableType($node, $stack);
     }
 
-    private function handleParamType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleParamType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Param) {
             return false;
         }
-        $this->handleParamNode($node, $scope);
+        $this->handleParamNode($node, $stack);
         return true;
     }
 
-    private function handleAssignType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleAssignType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Expr\Assign) {
             return false;
         }
-        $this->handleAssignNode($node, $scope);
+        $this->handleAssignNode($node, $stack);
         return true;
     }
 
-    private function handleAssignOpType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleAssignOpType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Expr\AssignOp && !$node instanceof Expr\AssignRef) {
             return false;
         }
-        $this->handleAssignOpLikeNode($node, $scope);
+        $this->handleAssignOpLikeNode($node, $stack);
         return true;
     }
 
@@ -161,56 +159,62 @@ final class UnusedVariableCop implements CopInterface
         return true;
     }
 
-    private function handleForeachType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleForeachType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Stmt\Foreach_) {
             return false;
         }
-        $this->handleForeachNode($node, $scope);
+        $this->handleForeachNode($node, $stack);
         return true;
     }
 
-    private function handleCatchType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleCatchType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Stmt\Catch_) {
             return false;
         }
-        $this->handleCatchNode($node, $scope);
+        $this->handleCatchNode($node, $stack);
         return true;
     }
 
-    private function handleVariableType(Node $node, Node $scope): bool
+    /** @param list<Node> $stack */
+    private function handleVariableType(Node $node, array &$stack): bool
     {
         if (!$node instanceof Expr\Variable) {
             return false;
         }
-        $this->handleVariableNode($node, $scope);
+        $this->handleVariableNode($node, $stack);
         return true;
     }
 
-    private function handleParamNode(Param $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleParamNode(Param $node, array &$stack): void
     {
         if (!$this->ignoreParameters && $node->var instanceof Expr\Variable && is_string($node->var->name)) {
             $this->markAssignedName($node->var->name, (int) $node->getStartLine());
         }
 
         if ($node->default instanceof Node) {
-            $this->visitScopeNode($node->default, $scope);
+            $stack[] = $node->default;
         }
     }
 
-    private function handleAssignNode(Expr\Assign $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleAssignNode(Expr\Assign $node, array &$stack): void
     {
         $this->collectReadNamesFromAssignmentTarget($node->var);
         $this->collectAssignedNames($node->var, (int) $node->getStartLine());
-        $this->visitScopeNode($node->expr, $scope);
+        $stack[] = $node->expr;
     }
 
-    private function handleAssignOpLikeNode(Expr\AssignOp|Expr\AssignRef $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleAssignOpLikeNode(Expr\AssignOp|Expr\AssignRef $node, array &$stack): void
     {
         $this->collectReadNames($node->var);
         $this->collectAssignedNames($node->var, (int) $node->getStartLine());
-        $this->visitScopeNode($node->expr, $scope);
+        $stack[] = $node->expr;
     }
 
     private function isIncDecNode(Node $node): bool
@@ -236,9 +240,10 @@ final class UnusedVariableCop implements CopInterface
         $this->collectAssignedNames($node->var, (int) $node->getStartLine());
     }
 
-    private function handleForeachNode(Stmt\Foreach_ $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleForeachNode(Stmt\Foreach_ $node, array &$stack): void
     {
-        $this->visitScopeNode($node->expr, $scope);
+        $stack[] = $node->expr;
 
         if ($node->keyVar instanceof Node) {
             $this->collectAssignedNames($node->keyVar, (int) $node->keyVar->getStartLine());
@@ -247,23 +252,21 @@ final class UnusedVariableCop implements CopInterface
             $this->collectAssignedNames($node->valueVar, (int) $node->valueVar->getStartLine());
         }
 
-        foreach ($node->stmts as $foreachStmt) {
-            $this->visitScopeNode($foreachStmt, $scope);
-        }
+        $this->pushChildren($stack, $node->stmts);
     }
 
-    private function handleCatchNode(Stmt\Catch_ $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleCatchNode(Stmt\Catch_ $node, array &$stack): void
     {
         if ($node->var instanceof Expr\Variable && is_string($node->var->name)) {
             $this->markAssignedName($node->var->name, (int) $node->var->getStartLine());
         }
 
-        foreach ($node->stmts as $catchStmt) {
-            $this->visitScopeNode($catchStmt, $scope);
-        }
+        $this->pushChildren($stack, $node->stmts);
     }
 
-    private function handleVariableNode(Expr\Variable $node, Node $scope): void
+    /** @param list<Node> $stack */
+    private function handleVariableNode(Expr\Variable $node, array &$stack): void
     {
         if (is_string($node->name)) {
             $this->markReadName($node->name);
@@ -271,7 +274,7 @@ final class UnusedVariableCop implements CopInterface
         }
 
         if ($node->name instanceof Node) {
-            $this->visitScopeNode($node->name, $scope);
+            $stack[] = $node->name;
         }
     }
 
@@ -423,6 +426,14 @@ final class UnusedVariableCop implements CopInterface
             if ($child instanceof Node) {
                 $children[] = $child;
             }
+        }
+    }
+
+    /** @param list<Node> $stack @param list<Node> $children */
+    private function pushChildren(array &$stack, array $children): void
+    {
+        for ($i = count($children) - 1; $i >= 0; $i--) {
+            $stack[] = $children[$i];
         }
     }
 

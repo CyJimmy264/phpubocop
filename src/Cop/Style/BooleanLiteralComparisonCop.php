@@ -56,72 +56,93 @@ final class BooleanLiteralComparisonCop implements CopInterface
     public function inspect(SourceFile $file, array $config = []): array
     {
         $offenses = [];
-        $falseableVars = [];
+        $scopeStack = [['end' => PHP_INT_MAX, 'falseableVars' => []]];
 
-        foreach ($file->ast() as $node) {
-            $this->walk($node, $file, $offenses, $falseableVars);
+        foreach ($file->astNodes() as $node) {
+            $this->popFinishedScopes($scopeStack, $node);
+            if ($this->isScope($node)) {
+                $scopeStack[] = [
+                    'end' => $this->scopeEndPosition($node),
+                    'falseableVars' => $this->currentFalseableVars($scopeStack),
+                ];
+                continue;
+            }
+
+            if ($this->handleAssignNode($node, $scopeStack)) {
+                continue;
+            }
+            if ($this->handleAssignOpLikeNode($node, $scopeStack)) {
+                continue;
+            }
+            if ($this->shouldReportBooleanLiteralComparison($node, $this->currentFalseableVars($scopeStack))) {
+                $this->appendComparisonOffense($node, $file, $offenses);
+            }
         }
 
         return $offenses;
     }
 
-    /** @param list<Offense> $offenses */
-    private function walk(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): void
+    /** @param array<int,array{end:int,falseableVars:array<string,bool>}> $scopeStack */
+    private function popFinishedScopes(array &$scopeStack, Node $node): void
     {
-        if ($this->isScope($node)) {
-            $this->walkScopeNode($node, $file, $offenses, $falseableVars);
+        $start = $node->getStartFilePos();
+        if (!is_int($start)) {
             return;
-        }
-        if ($this->handleAssignNode($node, $file, $offenses, $falseableVars)) {
-            return;
-        }
-        if ($this->handleAssignOpLikeNode($node, $file, $offenses, $falseableVars)) {
-            return;
-        }
-        if ($this->shouldReportBooleanLiteralComparison($node, $falseableVars)) {
-            $this->appendComparisonOffense($node, $file, $offenses);
         }
 
-        $this->walkChildren($node, $file, $offenses, $falseableVars);
+        while (count($scopeStack) > 1) {
+            $lastIndex = count($scopeStack) - 1;
+            if ($scopeStack[$lastIndex]['end'] >= $start) {
+                break;
+            }
+
+            array_pop($scopeStack);
+        }
     }
 
-    /** @param list<Offense> $offenses */
-    private function walkScopeNode(Node $node, SourceFile $file, array &$offenses, array $falseableVars): void
+    private function scopeEndPosition(Node $node): int
     {
-        $scopeVars = $falseableVars;
-        $this->walkChildren($node, $file, $offenses, $scopeVars);
+        $end = $node->getEndFilePos();
+        return is_int($end) ? $end : PHP_INT_MAX;
     }
 
-    /** @param list<Offense> $offenses */
-    private function handleAssignNode(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): bool
+    /** @param array<int,array{end:int,falseableVars:array<string,bool>}> $scopeStack @return array<string,bool> */
+    private function currentFalseableVars(array &$scopeStack): array
+    {
+        return $scopeStack[count($scopeStack) - 1]['falseableVars'];
+    }
+
+    /** @param array<int,array{end:int,falseableVars:array<string,bool>}> $scopeStack */
+    private function handleAssignNode(Node $node, array &$scopeStack): bool
     {
         if (!$node instanceof Expr\Assign || !$node->var instanceof Expr\Variable || !is_string($node->var->name)) {
             return false;
         }
 
         $name = $node->var->name;
+        $lastIndex = count($scopeStack) - 1;
+        $falseableVars = $scopeStack[$lastIndex]['falseableVars'];
         if ($this->isFalseableExpression($node->expr, $falseableVars)) {
-            $falseableVars[$name] = true;
+            $scopeStack[$lastIndex]['falseableVars'][$name] = true;
         } else {
-            unset($falseableVars[$name]);
+            unset($scopeStack[$lastIndex]['falseableVars'][$name]);
         }
 
-        $this->walk($node->expr, $file, $offenses, $falseableVars);
         return true;
     }
 
-    /** @param list<Offense> $offenses */
-    private function handleAssignOpLikeNode(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): bool
+    /** @param array<int,array{end:int,falseableVars:array<string,bool>}> $scopeStack */
+    private function handleAssignOpLikeNode(Node $node, array &$scopeStack): bool
     {
         if (!$node instanceof Expr\AssignOp && !$node instanceof Expr\AssignRef) {
             return false;
         }
 
         if ($node->var instanceof Expr\Variable && is_string($node->var->name)) {
-            unset($falseableVars[$node->var->name]);
+            $lastIndex = count($scopeStack) - 1;
+            unset($scopeStack[$lastIndex]['falseableVars'][$node->var->name]);
         }
 
-        $this->walk($node->expr, $file, $offenses, $falseableVars);
         return true;
     }
 
@@ -139,7 +160,6 @@ final class BooleanLiteralComparisonCop implements CopInterface
         return $this->isObviouslyBooleanExpression($otherSide);
     }
 
-    /** @param list<Offense> $offenses */
     private function appendComparisonOffense(Node $node, SourceFile $file, array &$offenses): void
     {
         $offenses[] = new Offense(
@@ -149,26 +169,6 @@ final class BooleanLiteralComparisonCop implements CopInterface
             1,
             'Avoid comparing to boolean literals; simplify the condition.',
         );
-    }
-
-    /** @param list<Offense> $offenses */
-    private function walkChildren(Node $node, SourceFile $file, array &$offenses, array &$falseableVars): void
-    {
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $subNode = $node->{$subNodeName};
-            if ($subNode instanceof Node) {
-                $this->walk($subNode, $file, $offenses, $falseableVars);
-                continue;
-            }
-
-            if (is_array($subNode)) {
-                foreach ($subNode as $child) {
-                    if ($child instanceof Node) {
-                        $this->walk($child, $file, $offenses, $falseableVars);
-                    }
-                }
-            }
-        }
     }
 
     private function isBooleanComparison(Node $node): bool
