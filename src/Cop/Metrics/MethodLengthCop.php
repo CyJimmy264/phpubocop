@@ -106,7 +106,7 @@ final class MethodLengthCop implements CopInterface
     private function scopeSignificantLines(SourceFile $file): array
     {
         $lines = [];
-        foreach (token_get_all($file->content) as $token) {
+        foreach ($file->tokens() as $token) {
             if (!is_array($token)) {
                 continue;
             }

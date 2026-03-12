@@ -55,7 +55,7 @@ final class UnreachableCodeCop implements CopInterface
     private function collectUnreachableOffenses(SourceFile $file): array
     {
         $offenses = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             $statements = $this->statementListFromNode($node);
             if ($statements !== null) {
                 $this->inspectStatementList($statements, $file, $offenses);

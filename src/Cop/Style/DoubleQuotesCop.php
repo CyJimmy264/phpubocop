@@ -24,7 +24,7 @@ final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface
     {
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             if (!$this->isAutocorrectSafeDoubleQuotedString($file, $node)) {
                 return;
             }
@@ -90,7 +90,7 @@ final class DoubleQuotesCop implements CopInterface, AutocorrectableCopInterface
     private function collectReplacements(SourceFile $file): array
     {
         $replacements = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$replacements, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$replacements, $file): void {
             $replacement = $this->replacementForNode($node, $file);
             if ($replacement !== null) {
                 $replacements[] = $replacement;

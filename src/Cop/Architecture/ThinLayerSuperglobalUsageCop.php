@@ -32,7 +32,7 @@ final class ThinLayerSuperglobalUsageCop implements CopInterface
         }
 
         $offenses = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file, $forbidden): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file, $forbidden): void {
             if (!$node instanceof Expr\Variable || !is_string($node->name)) {
                 return;
             }

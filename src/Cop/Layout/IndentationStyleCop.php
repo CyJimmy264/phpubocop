@@ -23,7 +23,7 @@ final class IndentationStyleCop implements CopInterface, AutocorrectableCopInter
             return [];
         }
 
-        $ignoredLines = $this->ignoredIndentationLines($file->content);
+        $ignoredLines = $this->ignoredIndentationLines($file);
         return $this->collectTabIndentOffenses($file, $ignoredLines);
     }
 
@@ -34,18 +34,18 @@ final class IndentationStyleCop implements CopInterface, AutocorrectableCopInter
         }
 
         $tabWidth = $this->tabWidth($config);
-        $ignoredLines = $this->ignoredIndentationLines($file->content);
+        $ignoredLines = $this->ignoredIndentationLines($file);
         $lines = explode("\n", $file->content);
         return $this->autocorrectLines($lines, $ignoredLines, $tabWidth);
     }
 
     /** @return array<int,true> */
-    private function ignoredIndentationLines(string $content): array
+    private function ignoredIndentationLines(SourceFile $file): array
     {
         $ignored = [];
         $heredocStartLine = null;
 
-        foreach (token_get_all($content) as $token) {
+        foreach ($file->tokens() as $token) {
             $heredocStartLine = $this->processIndentationToken($token, $ignored, $heredocStartLine);
         }
 

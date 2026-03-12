@@ -28,7 +28,7 @@ final class ThinLayerForbiddenFunctionsCop implements CopInterface
         }
 
         $offenses = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file, $config): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file, $config): void {
             if (!$this->isForbiddenFunctionCall($node, $config)) {
                 return;
             }

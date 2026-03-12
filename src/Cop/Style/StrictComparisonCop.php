@@ -28,7 +28,7 @@ final class StrictComparisonCop implements
     {
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             $this->appendOffenseForNode($node, $file, $offenses);
         });
 
@@ -73,7 +73,7 @@ final class StrictComparisonCop implements
     private function collectReplacements(SourceFile $file): array
     {
         $replacements = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$replacements, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$replacements, $file): void {
             $replacement = $this->replacementForNode($node, $file->content);
             if ($replacement !== null) {
                 $replacements[] = $replacement;

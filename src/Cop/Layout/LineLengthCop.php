@@ -59,7 +59,7 @@ final class LineLengthCop implements CopInterface
             return $this->allFileLines($file);
         }
 
-        return $this->phpTokenLines($file->content);
+        return $this->phpTokenLines($file);
     }
 
     /** @return array<int,bool> */
@@ -83,10 +83,10 @@ final class LineLengthCop implements CopInterface
     }
 
     /** @return array<int,bool> */
-    private function phpTokenLines(string $content): array
+    private function phpTokenLines(SourceFile $file): array
     {
         $lines = [];
-        foreach (token_get_all($content) as $token) {
+        foreach ($file->tokens() as $token) {
             if (!is_array($token) || $this->shouldIgnoreTokenForLineLength($token[0])) {
                 continue;
             }

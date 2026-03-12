@@ -29,7 +29,7 @@ final class EvalAndDynamicIncludeCop implements CopInterface
         );
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             if ($this->handleEvalNode($node, $file, $offenses)) {
                 return;
             }

@@ -11,8 +11,12 @@ final class InlineSuppressionMap
 
     public function __construct(SourceFile $file)
     {
-        $significantLines = $this->significantCodeLines($file->content);
-        foreach (token_get_all($file->content) as $token) {
+        if (!str_contains($file->content, 'phpubocop:disable')) {
+            return;
+        }
+
+        $significantLines = $this->significantCodeLines($file);
+        foreach ($file->tokens() as $token) {
             if (!is_array($token) || !$this->isCommentToken($token[0])) {
                 continue;
             }
@@ -32,10 +36,10 @@ final class InlineSuppressionMap
     }
 
     /** @return array<int,bool> */
-    private function significantCodeLines(string $content): array
+    private function significantCodeLines(SourceFile $file): array
     {
         $lines = [];
-        foreach (token_get_all($content) as $token) {
+        foreach ($file->tokens() as $token) {
             if (!is_array($token) || $this->ignoredSignificantToken($token[0])) {
                 continue;
             }

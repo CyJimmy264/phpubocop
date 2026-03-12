@@ -37,7 +37,7 @@ final class ExecCop implements CopInterface
 
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             if (!$node instanceof Expr\FuncCall || !$node->name instanceof Name) {
                 return;
             }

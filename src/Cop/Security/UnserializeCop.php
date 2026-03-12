@@ -25,7 +25,7 @@ final class UnserializeCop implements CopInterface
     {
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             if (!$node instanceof Expr\FuncCall || !$this->isUnserializeCall($node)) {
                 return;
             }

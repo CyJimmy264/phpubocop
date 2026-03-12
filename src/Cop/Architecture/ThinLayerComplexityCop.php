@@ -41,7 +41,7 @@ final class ThinLayerComplexityCop implements CopInterface
         }
 
         $branchCount = 0;
-        AstWalker::walk($file->ast(), function (Node $node) use (&$branchCount): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$branchCount): void {
             if ($this->isBranchNode($node)) {
                 $branchCount++;
             }

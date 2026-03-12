@@ -45,7 +45,7 @@ final class ThinLayerGlobalStateUsageCop implements CopInterface
     private function collectOffenses(SourceFile $file, bool $checkGlobalKeyword): array
     {
         $offenses = [];
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file, $checkGlobalKeyword): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file, $checkGlobalKeyword): void {
             $offense = $this->offenseForNode($node, $file, $checkGlobalKeyword);
             if ($offense !== null) {
                 $offenses[] = $offense;

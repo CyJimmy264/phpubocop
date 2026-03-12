@@ -56,8 +56,7 @@ final class ThinLayerLengthCop implements CopInterface
             return 0;
         }
 
-        $tokens = token_get_all($file->content);
-        $significantLines = $this->significantLines($tokens);
+        $significantLines = $this->significantLines($file->tokens());
         if ($significantLines === []) {
             return 0;
         }

@@ -57,7 +57,7 @@ final class TrailingCommaInMultilineCop implements
     {
         $missing = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$missing, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$missing, $file): void {
             if ($node instanceof Expr\Array_) {
                 $this->checkList($file, $node->items, $node, $missing);
                 return;

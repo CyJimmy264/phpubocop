@@ -22,7 +22,7 @@ final class EmptyCatchCop implements CopInterface
     {
         $offenses = [];
 
-        AstWalker::walk($file->ast(), function (Node $node) use (&$offenses, $file): void {
+        AstWalker::walk($file->astNodes(), function (Node $node) use (&$offenses, $file): void {
             if (!$node instanceof Catch_) {
                 return;
             }
