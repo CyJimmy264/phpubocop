@@ -69,6 +69,9 @@ Style/DoubleQuotes:
 Style/EmptyCatch:
   Enabled: true
 
+Style/MultilineTernary:
+  Enabled: true
+
 Style/BooleanLiteralComparison:
   Enabled: true
 
@@ -143,6 +146,7 @@ Metrics/ParameterLists:
 - `Layout/IndentationStyle`
 - `Style/DoubleQuotes`
 - `Style/EmptyCatch`
+- `Style/MultilineTernary`
 - `Style/BooleanLiteralComparison`
 - `Style/StrictComparison`
 - `Security/Unserialize`

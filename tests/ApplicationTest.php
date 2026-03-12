@@ -53,6 +53,8 @@ Style/DoubleQuotes:
   Enabled: true
 Style/EmptyCatch:
   Enabled: false
+Style/MultilineTernary:
+  Enabled: false
 Style/BooleanLiteralComparison:
   Enabled: false
 Style/StrictComparison:
@@ -128,6 +130,8 @@ Lint/UnusedVariable:
 Style/DoubleQuotes:
   Enabled: false
 Style/EmptyCatch:
+  Enabled: false
+Style/MultilineTernary:
   Enabled: false
 Style/BooleanLiteralComparison:
   Enabled: false

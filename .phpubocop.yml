@@ -17,6 +17,9 @@ Style/DoubleQuotes:
 Style/EmptyCatch:
   Enabled: true
 
+Style/MultilineTernary:
+  Enabled: true
+
 Style/BooleanLiteralComparison:
   Enabled: true
 

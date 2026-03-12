@@ -388,9 +388,10 @@ TXT;
     {
         $configPath = $resolvedConfig['path'] ?? '<defaults>';
         $exclude = $config['AllCops']['Exclude'] ?? [];
-        $excludeText = $exclude === []
-            ? '(none)'
-            : implode(', ', array_map(static fn ($item): string => (string) $item, $exclude));
+        $excludeText = '(none)';
+        if ($exclude !== []) {
+            $excludeText = implode(', ', array_map(static fn ($item): string => (string) $item, $exclude));
+        }
 
         fwrite(STDERR, sprintf("[phpubocop] target: %s\n", $path));
         fwrite(STDERR, sprintf("[phpubocop] config: %s (%s)\n", $configPath, $resolvedConfig['source']));

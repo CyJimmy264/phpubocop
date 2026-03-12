@@ -59,9 +59,12 @@ final class ConfigLoader
             return null;
         }
 
-        return is_string($loadedConfig['AllCops']['Profile'])
-            ? strtolower($loadedConfig['AllCops']['Profile'])
-            : null;
+        $profileValue = $loadedConfig['AllCops']['Profile'];
+        if (!is_string($profileValue)) {
+            return null;
+        }
+
+        return strtolower($profileValue);
     }
 
     private function defaultConfig(): array
@@ -215,6 +218,9 @@ final class ConfigLoader
             'Style/EmptyCatch' => [
                 'Enabled' => true,
             ],
+            'Style/MultilineTernary' => [
+                'Enabled' => true,
+            ],
             'Style/StrictComparison' => [
                 'Enabled' => true,
             ],
@@ -252,9 +258,10 @@ final class ConfigLoader
 
     private function applyThinLayerInheritance(array $config): array
     {
-        $boundary = is_array($config['Architecture/ThinLayerBoundary'] ?? null)
-            ? $config['Architecture/ThinLayerBoundary']
-            : [];
+        $boundary = [];
+        if (is_array($config['Architecture/ThinLayerBoundary'] ?? null)) {
+            $boundary = $config['Architecture/ThinLayerBoundary'];
+        }
 
         foreach (self::THIN_LAYER_INHERITORS as $copName) {
             $copConfig = is_array($config[$copName] ?? null) ? $config[$copName] : [];

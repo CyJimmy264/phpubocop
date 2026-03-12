@@ -33,6 +33,7 @@ use PHPuboCop\Cop\Metrics\ParameterListsCop;
 use PHPuboCop\Cop\Style\BooleanLiteralComparisonCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
 use PHPuboCop\Cop\Style\EmptyCatchCop;
+use PHPuboCop\Cop\Style\MultilineTernaryCop;
 use PHPuboCop\Cop\Style\StrictComparisonCop;
 use PHPuboCop\Cop\Security\UnserializeCop;
 use PHPuboCop\Cop\Security\ExecCop;
@@ -58,6 +59,7 @@ final class CopRegistry
             new DoubleQuotesCop(),
             new BooleanLiteralComparisonCop(),
             new EmptyCatchCop(),
+            new MultilineTernaryCop(),
             new StrictComparisonCop(),
             new AbcSizeCop(),
             new CyclomaticComplexityCop(),
