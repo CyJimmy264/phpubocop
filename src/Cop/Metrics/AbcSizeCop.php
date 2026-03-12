@@ -53,23 +53,15 @@ final class AbcSizeCop implements CopInterface
         $max = (float) ($config['Max'] ?? 17.0);
         $offenses = [];
 
-        foreach ($file->ast() as $node) {
-            $this->collectOffenses($node, $file, $max, $offenses);
-        }
+        foreach ($file->astNodes() as $node) {
+            if (!$this->isMeasuredScope($node)) {
+                continue;
+            }
 
-        return $offenses;
-    }
-
-    /** @param list<Offense> $offenses */
-    private function collectOffenses(Node $node, SourceFile $file, float $max, array &$offenses): void
-    {
-        if ($this->isMeasuredScope($node)) {
             $this->appendOffenseForScopeIfNeeded($node, $file, $max, $offenses);
         }
 
-        foreach ($this->childNodesOf($node) as $child) {
-            $this->collectOffenses($child, $file, $max, $offenses);
-        }
+        return $offenses;
     }
 
     /** @param list<Offense> $offenses */

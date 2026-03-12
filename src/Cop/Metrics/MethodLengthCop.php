@@ -16,6 +16,8 @@ final class MethodLengthCop implements CopInterface
 {
     private int $scopeStartLine = 0;
     private int $scopeEndLine = 0;
+    /** @var array<int,int> */
+    private array $significantLinePrefixSums = [];
     /** @var array<string,bool> */
     private array $countAsOneOptions = [];
     /** @var array<int,bool> */
@@ -33,24 +35,18 @@ final class MethodLengthCop implements CopInterface
         $max = (int) ($config['Max'] ?? 20);
         $countAsOne = $this->normalizedCountAsOne($config['CountAsOne'] ?? ['array', 'heredoc', 'call_chain']);
         $offenses = [];
+        $this->significantLines = $this->significantLinesByLine($file);
+        $this->significantLinePrefixSums = $this->buildPrefixSums($file, $this->significantLines);
 
-        foreach ($file->ast() as $node) {
-            $this->collectOffenses($node, $file, $max, $countAsOne, $offenses);
-        }
+        foreach ($file->astNodes() as $node) {
+            if (!$this->isMeasuredScope($node)) {
+                continue;
+            }
 
-        return $offenses;
-    }
-
-    /** @param list<Offense> $offenses */
-    private function collectOffenses(Node $node, SourceFile $file, int $max, array $countAsOne, array &$offenses): void
-    {
-        if ($this->isMeasuredScope($node)) {
             $this->appendOffenseForScopeIfNeeded($node, $file, $max, $countAsOne, $offenses);
         }
 
-        foreach ($this->childNodesOf($node) as $child) {
-            $this->collectOffenses($child, $file, $max, $countAsOne, $offenses);
-        }
+        return $offenses;
     }
 
     /** @param list<Offense> $offenses */
@@ -90,8 +86,7 @@ final class MethodLengthCop implements CopInterface
             return 0;
         }
 
-        $this->significantLines = $this->scopeSignificantLines($file);
-        $baseLength = count($this->significantLines);
+        $baseLength = $this->countSignificantLinesInScope();
         $this->countAsOneOptions = $countAsOne;
         if ($this->countAsOneOptions === [] || $baseLength === 0) {
             return $baseLength;
@@ -102,33 +97,13 @@ final class MethodLengthCop implements CopInterface
         return max(0, $baseLength - count($this->foldedLines));
     }
 
-    /** @return array<int,bool> */
-    private function scopeSignificantLines(SourceFile $file): array
+    private function countSignificantLinesInScope(): int
     {
-        $lines = [];
-        foreach ($file->tokens() as $token) {
-            if (!is_array($token)) {
-                continue;
-            }
+        $beforeStart = $this->scopeStartLine > 1
+            ? ($this->significantLinePrefixSums[$this->scopeStartLine - 1] ?? 0)
+            : 0;
 
-            [$tokenId, $text, $line] = $token;
-            if ($this->ignoredScopeToken($tokenId)) {
-                continue;
-            }
-
-            $line = (int) $line;
-            $lineCount = substr_count((string) $text, "\n");
-            for ($offset = 0; $offset <= $lineCount; $offset++) {
-                $currentLine = $line + $offset;
-                if ($currentLine < $this->scopeStartLine || $currentLine > $this->scopeEndLine) {
-                    continue;
-                }
-
-                $lines[$currentLine] = true;
-            }
-        }
-
-        return $lines;
+        return ($this->significantLinePrefixSums[$this->scopeEndLine] ?? 0) - $beforeStart;
     }
 
     private function ignoredScopeToken(int $tokenId): bool
@@ -153,6 +128,47 @@ final class MethodLengthCop implements CopInterface
         foreach ($this->childNodesOf($node) as $child) {
             $this->collectFoldedLines($child);
         }
+    }
+
+    /** @return array<int,bool> */
+    private function significantLinesByLine(SourceFile $file): array
+    {
+        $lines = [];
+        foreach ($file->tokens() as $token) {
+            if (!is_array($token)) {
+                continue;
+            }
+
+            [$tokenId, $text, $line] = $token;
+            if ($this->ignoredScopeToken($tokenId)) {
+                continue;
+            }
+
+            $line = (int) $line;
+            $lineCount = substr_count((string) $text, "\n");
+            for ($offset = 0; $offset <= $lineCount; $offset++) {
+                $lines[$line + $offset] = true;
+            }
+        }
+
+        return $lines;
+    }
+
+    /** @param array<int,bool> $significantLines @return array<int,int> */
+    private function buildPrefixSums(SourceFile $file, array $significantLines): array
+    {
+        $prefixSums = [];
+        $running = 0;
+        $lineCount = count($file->lines());
+        for ($line = 1; $line <= $lineCount; $line++) {
+            if (isset($significantLines[$line])) {
+                $running++;
+            }
+
+            $prefixSums[$line] = $running;
+        }
+
+        return $prefixSums;
     }
 
     private function markFoldedLineRange(Node $node): void

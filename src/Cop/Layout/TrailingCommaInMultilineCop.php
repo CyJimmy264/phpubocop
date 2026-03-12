@@ -68,10 +68,6 @@ final class TrailingCommaInMultilineCop implements
             }
         });
 
-        usort(
-            $missing,
-            static fn (array $a, array $b): int => [$a['line'], $a['insert_pos']] <=> [$b['line'], $b['insert_pos']],
-        );
         return $missing;
     }
 
@@ -98,14 +94,18 @@ final class TrailingCommaInMultilineCop implements
     /** @param array<int, ArrayItem|Arg|null> $items @return array{0:Node,1:Node}|null */
     private function firstAndLastNode(array $items): ?array
     {
-        $nonNull = array_values(array_filter($items, static fn ($item): bool => $item !== null));
-        if ($nonNull === []) {
-            return null;
+        $first = null;
+        $last = null;
+        foreach ($items as $item) {
+            if (!$item instanceof Node) {
+                continue;
+            }
+
+            $first ??= $item;
+            $last = $item;
         }
 
-        $first = $nonNull[0];
-        $last = $nonNull[count($nonNull) - 1];
-        if (!$first instanceof Node || !$last instanceof Node) {
+        if ($first === null || $last === null) {
             return null;
         }
 
@@ -224,11 +224,46 @@ final class TrailingCommaInMultilineCop implements
 
     private function hasTrailingComma(string $between): bool
     {
-        $withoutComments = preg_replace('/\/\*.*?\*\/|\/\/[^\n]*|#[^\n]*/s', '', $between);
-        if (!is_string($withoutComments)) {
-            $withoutComments = $between;
+        $length = strlen($between);
+        $index = 0;
+        while ($index < $length) {
+            $char = $between[$index];
+            if (ctype_space($char)) {
+                $index++;
+                continue;
+            }
+
+            if ($char === ',') {
+                return true;
+            }
+
+            if ($char === '/' && ($index + 1) < $length) {
+                $next = $between[$index + 1];
+                if ($next === '/') {
+                    $newlinePos = strpos($between, "\n", $index + 2);
+                    return $newlinePos !== false
+                        ? $this->hasTrailingComma(substr($between, $newlinePos + 1))
+                        : false;
+                }
+
+                if ($next === '*') {
+                    $commentEnd = strpos($between, '*/', $index + 2);
+                    return $commentEnd !== false
+                        ? $this->hasTrailingComma(substr($between, $commentEnd + 2))
+                        : false;
+                }
+            }
+
+            if ($char === '#') {
+                $newlinePos = strpos($between, "\n", $index + 1);
+                return $newlinePos !== false
+                    ? $this->hasTrailingComma(substr($between, $newlinePos + 1))
+                    : false;
+            }
+
+            return false;
         }
 
-        return str_contains($withoutComments, ',');
+        return false;
     }
 }
