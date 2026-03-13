@@ -25,7 +25,12 @@ vendor/bin/phpubocop src --config=.phpubocop.yml
 vendor/bin/phpubocop src --autocorrect
 vendor/bin/phpubocop src --autocorrect-all
 vendor/bin/phpubocop src --verbose
+
+# Allow Xdebug for debugging/profiling runs.
+PHPUBOCOP_ALLOW_XDEBUG=1 vendor/bin/phpubocop src
 ```
+
+`phpubocop` disables Xdebug by default by re-executing itself with `xdebug.mode=off`, because Xdebug significantly slows down lint runs. Set `PHPUBOCOP_ALLOW_XDEBUG=1` when you explicitly want to debug or profile the process.
 
 Exit code:
 

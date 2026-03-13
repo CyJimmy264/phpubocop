@@ -5,6 +5,10 @@ declare(strict_types=1);
 
 use PHPuboCop\Application;
 
+if (shouldRestartWithoutXdebug()) {
+    exit(restartWithoutXdebug($argv));
+}
+
 $autoloadCandidates = [
     __DIR__ . '/../vendor/autoload.php',
     __DIR__ . '/../../../autoload.php',
@@ -31,3 +35,35 @@ ini_set('memory_limit', $memoryLimit);
 
 $app = new Application();
 exit($app->run($argv));
+
+function shouldRestartWithoutXdebug(): bool
+{
+    if (PHP_SAPI !== 'cli') {
+        return false;
+    }
+    if (!extension_loaded('xdebug')) {
+        return false;
+    }
+    if (getenv('PHPUBOCOP_ALLOW_XDEBUG') === '1') {
+        return false;
+    }
+    if (getenv('PHPUBOCOP_XDEBUG_DISABLED') === '1') {
+        return false;
+    }
+
+    return true;
+}
+
+/** @param list<string> $argv */
+function restartWithoutXdebug(array $argv): int
+{
+    $phpBinary = PHP_BINARY;
+    $command = escapeshellarg($phpBinary) . ' -d xdebug.mode=off';
+    foreach ($argv as $arg) {
+        $command .= ' ' . escapeshellarg($arg);
+    }
+
+    putenv('PHPUBOCOP_XDEBUG_DISABLED=1');
+    passthru($command, $exitCode);
+    return $exitCode;
+}
