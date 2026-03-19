@@ -8,6 +8,8 @@ use PHPuboCop\Core\Offense;
 
 final class TextFormatter implements FormatterInterface
 {
+    private const TAB_WIDTH = 8;
+
     public function format(array $offenses, array $context = []): string
     {
         $inspectedFiles = $this->inspectedFiles($context);
@@ -131,11 +133,12 @@ final class TextFormatter implements FormatterInterface
         }
 
         $trimmed = rtrim($sourceLine, "\r\n");
+        $displayLine = $this->expandTabs($trimmed);
         $caretLine = $this->caretLine($trimmed, $offense->column);
 
         return sprintf(
             '%s%s%s',
-            $trimmed,
+            $displayLine,
             PHP_EOL,
             $this->paint($caretLine, '0;33', $useColor),
         );
@@ -160,7 +163,34 @@ final class TextFormatter implements FormatterInterface
         $prefixLength = max(0, $column - 1);
         $prefix = substr($sourceLine, 0, $prefixLength);
 
-        return str_repeat(' ', strlen($prefix ?: '')) . '^';
+        return str_repeat(' ', $this->visualWidth($prefix ?: '')) . '^';
+    }
+
+    private function expandTabs(string $text): string
+    {
+        $expanded = '';
+        $column = 0;
+        $length = strlen($text);
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = $text[$i];
+            if ($char !== "\t") {
+                $expanded .= $char;
+                $column++;
+                continue;
+            }
+
+            $spaces = self::TAB_WIDTH - ($column % self::TAB_WIDTH);
+            $expanded .= str_repeat(' ', $spaces);
+            $column += $spaces;
+        }
+
+        return $expanded;
+    }
+
+    private function visualWidth(string $text): int
+    {
+        return strlen($this->expandTabs($text));
     }
 
     private function buildSummary(
