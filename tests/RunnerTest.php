@@ -7,6 +7,7 @@ namespace PHPuboCop\Tests;
 use PHPuboCop\Cop\Layout\LineLengthCop;
 use PHPuboCop\Cop\Lint\EvalUsageCop;
 use PHPuboCop\Cop\Style\DoubleQuotesCop;
+use PHPuboCop\Cop\Style\StrictComparisonCop;
 use PHPuboCop\Core\CopRegistry;
 use PHPuboCop\Core\Runner;
 use PHPUnit\Framework\TestCase;
@@ -99,5 +100,30 @@ PHP,
 
         self::assertCount(1, $offenses);
         self::assertSame('Lint/EvalUsage', $offenses[0]->copName);
+    }
+
+    public function testRunnerPreservesPerOffenseAutocorrectMetadata(): void
+    {
+        $dir = sys_get_temp_dir() . '/phpubocop_strict_metadata_' . uniqid('', true);
+        mkdir($dir, 0777, true);
+        file_put_contents($dir . '/sample.php', <<<'PHP'
+<?php
+if ($a == 'Y') {
+    return;
+}
+PHP,
+);
+
+        $runner = new Runner([new StrictComparisonCop()]);
+        $config = [
+            'AllCops' => ['EnabledByDefault' => true, 'Exclude' => []],
+            'Style/StrictComparison' => ['Enabled' => true],
+        ];
+
+        $offenses = $runner->run($dir, $config);
+
+        self::assertCount(1, $offenses);
+        self::assertFalse($offenses[0]->correctable);
+        self::assertFalse($offenses[0]->safeAutocorrect);
     }
 }

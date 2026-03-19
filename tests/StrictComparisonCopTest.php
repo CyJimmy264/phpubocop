@@ -86,4 +86,27 @@ PHP,
 
         self::assertSame($source->content, $fixed);
     }
+
+    public function testMarksOnlySafeComparisonsAsCorrectable(): void
+    {
+        $cop = new StrictComparisonCop();
+        $source = new SourceFile('foo.php', <<<'PHP'
+<?php
+if (1 == 2) {
+    return;
+}
+if ($a == 'Y') {
+    return;
+}
+PHP,
+);
+
+        $offenses = $cop->inspect($source);
+
+        self::assertCount(2, $offenses);
+        self::assertTrue($offenses[0]->correctable);
+        self::assertTrue($offenses[0]->safeAutocorrect);
+        self::assertFalse($offenses[1]->correctable);
+        self::assertFalse($offenses[1]->safeAutocorrect);
+    }
 }

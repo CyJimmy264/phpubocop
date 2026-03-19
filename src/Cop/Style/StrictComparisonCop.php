@@ -49,12 +49,16 @@ final class StrictComparisonCop implements
 
     private function newOffense(SourceFile $file, Node $node, string $message): Offense
     {
+        $safe = $this->isSafeAutocorrectComparison($node);
         return new Offense(
             $this->name(),
             $file->path,
             (int) $node->getStartLine(),
             1,
             $message,
+            'convention',
+            $safe,
+            $safe,
         );
     }
 

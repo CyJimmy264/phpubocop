@@ -12,6 +12,7 @@ final class Offense
     public readonly string $severity;
     public readonly bool $correctable;
     public readonly bool $safeAutocorrect;
+    private readonly bool $autocorrectMetadataExplicit;
 
     public function __construct(
         public readonly string $copName,
@@ -25,7 +26,13 @@ final class Offense
             $this->severity,
             $this->correctable,
             $this->safeAutocorrect,
+            $this->autocorrectMetadataExplicit,
         ] = $this->normalizePayload($payload);
+    }
+
+    public function hasExplicitAutocorrectMetadata(): bool
+    {
+        return $this->autocorrectMetadataExplicit;
     }
 
     public function withAutocorrect(bool $correctable, bool $safeAutocorrect): self
@@ -58,7 +65,7 @@ final class Offense
 
     /**
      * @param array<int,mixed> $payload
-     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool}
+     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool,6:bool}
      */
     private function normalizePayload(array $payload): array
     {
@@ -77,7 +84,7 @@ final class Offense
 
     /**
      * @param array<int,mixed> $payload
-     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool}|null
+     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool,6:bool}|null
      */
     private function positionPayload(array $payload): ?array
     {
@@ -98,7 +105,7 @@ final class Offense
 
     /**
      * @param array<int,mixed> $payload
-     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool}|null
+     * @return array{0:int,1:int,2:string,3:string,4:bool,5:bool,6:bool}|null
      */
     private function legacyPayload(array $payload): ?array
     {
@@ -119,7 +126,7 @@ final class Offense
 
     /**
      * @param array<int,mixed> $payload
-     * @return array{0:string,1:bool,2:bool}|null
+     * @return array{0:string,1:bool,2:bool,3:bool}|null
      */
     private function payloadMetadata(
         array $payload,
@@ -130,11 +137,13 @@ final class Offense
         $severity = $payload[$severityIndex] ?? 'convention';
         $correctable = $payload[$correctableIndex] ?? false;
         $safeAutocorrect = $payload[$safeAutocorrectIndex] ?? false;
+        $autocorrectMetadataExplicit = array_key_exists($correctableIndex, $payload)
+            || array_key_exists($safeAutocorrectIndex, $payload);
 
         if (!is_string($severity) || !is_bool($correctable) || !is_bool($safeAutocorrect)) {
             return null;
         }
 
-        return [$severity, $correctable, $safeAutocorrect];
+        return [$severity, $correctable, $safeAutocorrect, $autocorrectMetadataExplicit];
     }
 }
