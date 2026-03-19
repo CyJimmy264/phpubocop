@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ConfigLoaderTest extends TestCase
 {
+    // phpubocop:disable Metrics/AbcSize, Metrics/MethodLength
     public function testThinLayerBoundaryIsDisabledByDefault(): void
     {
         $loader = new ConfigLoader();
@@ -131,6 +132,7 @@ YAML);
         self::assertFalse((bool) ($config['Architecture/ThinLayerIncludeUsage']['Enabled'] ?? true));
     }
 
+    // phpubocop:disable Metrics/AbcSize, Metrics/MethodLength
     public function testBitrixProfileEnablesThinLayerBoundary(): void
     {
         $dir = sys_get_temp_dir() . '/phpubocop_cfg_loader_' . uniqid('', true);
@@ -278,6 +280,7 @@ YAML);
         );
     }
 
+    // phpubocop:disable Metrics/AbcSize, Metrics/MethodLength
     public function testThinLayerForbiddenStaticCallsCanOverrideInheritedPaths(): void
     {
         $dir = sys_get_temp_dir() . '/phpubocop_cfg_loader_override_' . uniqid('', true);

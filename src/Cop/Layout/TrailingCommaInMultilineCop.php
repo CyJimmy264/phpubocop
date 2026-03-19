@@ -226,44 +226,75 @@ final class TrailingCommaInMultilineCop implements
     {
         $length = strlen($between);
         $index = 0;
+
         while ($index < $length) {
-            $char = $between[$index];
-            if (ctype_space($char)) {
-                $index++;
-                continue;
+            $index = $this->skipWhitespace($between, $index, $length);
+            if ($index >= $length) {
+                return false;
             }
 
-            if ($char === ',') {
+            if ($between[$index] === ',') {
                 return true;
             }
 
-            if ($char === '/' && ($index + 1) < $length) {
-                $next = $between[$index + 1];
-                if ($next === '/') {
-                    $newlinePos = strpos($between, "\n", $index + 2);
-                    return $newlinePos !== false
-                        ? $this->hasTrailingComma(substr($between, $newlinePos + 1))
-                        : false;
-                }
-
-                if ($next === '*') {
-                    $commentEnd = strpos($between, '*/', $index + 2);
-                    return $commentEnd !== false
-                        ? $this->hasTrailingComma(substr($between, $commentEnd + 2))
-                        : false;
-                }
+            $nextIndex = $this->skipComment($between, $index, $length);
+            if ($nextIndex === null) {
+                return false;
             }
 
-            if ($char === '#') {
-                $newlinePos = strpos($between, "\n", $index + 1);
-                return $newlinePos !== false
-                    ? $this->hasTrailingComma(substr($between, $newlinePos + 1))
-                    : false;
-            }
-
-            return false;
+            $index = $nextIndex;
         }
 
         return false;
+    }
+
+    private function skipWhitespace(string $between, int $index, int $length): int
+    {
+        while ($index < $length && ctype_space($between[$index])) {
+            $index++;
+        }
+
+        return $index;
+    }
+
+    private function skipComment(string $between, int $index, int $length): ?int
+    {
+        $char = $between[$index];
+        if ($char === '#') {
+            return $this->skipToNextLine($between, $index + 1);
+        }
+        if ($char !== '/' || ($index + 1) >= $length) {
+            return null;
+        }
+
+        $next = $between[$index + 1];
+        if ($next === '/') {
+            return $this->skipToNextLine($between, $index + 2);
+        }
+        if ($next === '*') {
+            return $this->skipBlockComment($between, $index + 2);
+        }
+
+        return null;
+    }
+
+    private function skipToNextLine(string $between, int $index): int
+    {
+        $newlinePos = strpos($between, "\n", $index);
+        if ($newlinePos === false) {
+            return strlen($between);
+        }
+
+        return $newlinePos + 1;
+    }
+
+    private function skipBlockComment(string $between, int $index): int
+    {
+        $commentEnd = strpos($between, '*/', $index);
+        if ($commentEnd === false) {
+            return strlen($between);
+        }
+
+        return $commentEnd + 2;
     }
 }

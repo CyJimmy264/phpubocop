@@ -16,6 +16,7 @@ final class FileFinderTest extends TestCase
         self::$gitAvailable = trim((string) shell_exec('command -v git 2>/dev/null')) !== '';
     }
 
+    // phpubocop:disable Metrics/AbcSize
     public function testRespectsGitignoreRules(): void
     {
         $root = sys_get_temp_dir() . '/phpubocop_finder_' . uniqid('', true);
@@ -88,6 +89,7 @@ final class FileFinderTest extends TestCase
         self::assertSame(1, $result['stats']['php_files_seen']);
     }
 
+    // phpubocop:disable Metrics/AbcSize
     public function testUsesGitFileListWhenRepositoryIsAvailable(): void
     {
         if (!self::$gitAvailable) {

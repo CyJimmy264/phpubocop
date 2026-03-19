@@ -107,9 +107,10 @@ final class Runner
         $correctable = $cop instanceof AutocorrectableCopInterface;
         $safeAutocorrect = $cop instanceof SafeAutocorrectableCopInterface;
         foreach ($cop->inspect($sourceFile, $copConfig) as $offense) {
-            $annotated = $offense->hasExplicitAutocorrectMetadata()
-                ? $offense
-                : $offense->withAutocorrect($correctable, $safeAutocorrect);
+            $annotated = $offense;
+            if (!$offense->hasExplicitAutocorrectMetadata()) {
+                $annotated = $offense->withAutocorrect($correctable, $safeAutocorrect);
+            }
             if ($suppressionMap->suppresses($annotated)) {
                 continue;
             }

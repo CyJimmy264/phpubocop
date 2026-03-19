@@ -343,6 +343,7 @@ YAML,
         self::assertSame(0, $exitCode);
     }
 
+    // phpubocop:disable Metrics/MethodLength
     public function testLoadsConfigFromTargetAncestorDirectoryForSingleFileTarget(): void
     {
         $dir = sys_get_temp_dir() . '/phpubocop_cfg_ancestor_' . uniqid('', true);

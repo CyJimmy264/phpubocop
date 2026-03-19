@@ -89,7 +89,8 @@ final class TextFormatterTest extends TestCase
         putenv('NO_COLOR');
 
         self::assertStringContainsString('C: Style/DoubleQuotes: [Correctable] Prefer single-quoted strings.', $output);
-        self::assertStringContainsString('1 files inspected, 1 offense(s) detected, 1 offense(s) autocorrectable', $output);
+        $summary = '1 files inspected, 1 offense(s) detected, 1 offense(s) autocorrectable';
+        self::assertStringContainsString($summary, $output);
     }
 
     public function testPrintsSourceSnippetAndCaretUnderOffense(): void
@@ -120,11 +121,20 @@ final class TextFormatterTest extends TestCase
         putenv('NO_COLOR=1');
         $formatter = new TextFormatter();
         $output = $formatter->format([
-            new Offense('Layout/TrailingWhitespace', $file, 2, 11, 'Trailing whitespace detected.', 'convention', true, true),
+            new Offense(
+                'Layout/TrailingWhitespace',
+                $file,
+                2,
+                11,
+                'Trailing whitespace detected.',
+                'convention',
+                true,
+                true,
+            ),
         ], ['inspected_files' => [$file]]);
         putenv('NO_COLOR');
 
-        self::assertStringContainsString("                Array(), ", $output);
+        self::assertStringContainsString('                Array(), ', $output);
         self::assertStringContainsString("\n                        ^\n\n", $output);
     }
 

@@ -99,9 +99,10 @@ final class MethodLengthCop implements CopInterface
 
     private function countSignificantLinesInScope(): int
     {
-        $beforeStart = $this->scopeStartLine > 1
-            ? ($this->significantLinePrefixSums[$this->scopeStartLine - 1] ?? 0)
-            : 0;
+        $beforeStart = 0;
+        if ($this->scopeStartLine > 1) {
+            $beforeStart = $this->significantLinePrefixSums[$this->scopeStartLine - 1] ?? 0;
+        }
 
         return ($this->significantLinePrefixSums[$this->scopeEndLine] ?? 0) - $beforeStart;
     }

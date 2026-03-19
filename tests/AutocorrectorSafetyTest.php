@@ -13,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 final class AutocorrectorSafetyTest extends TestCase
 {
+    // phpubocop:disable Metrics/MethodLength
     public function testAppliesOnlySafeAutocorrectableCops(): void
     {
         $dir = sys_get_temp_dir() . '/phpubocop_autocorrect_safe_' . uniqid('', true);
